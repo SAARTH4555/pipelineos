@@ -255,3 +255,93 @@ def test_usage_generate_and_score(tmp_path: Path) -> None:
         ],
     )
     assert no_truth.exit_code == 0 and "PQL rate by" not in no_truth.stdout
+
+
+def _usage_fixture(tmp_path: Path) -> tuple[Path, Path]:
+    raw, clean_dir, usage = tmp_path / "raw", tmp_path / "clean", tmp_path / "usage"
+    runner.invoke(app, ["generate", "--n", "300", "--out", str(raw)])
+    runner.invoke(app, ["clean", str(raw), "--out", str(clean_dir)])
+    runner.invoke(app, ["usage", "generate", str(clean_dir), "--out", str(usage)])
+    return clean_dir, usage / "events.csv"
+
+
+def test_sync_command_fake(tmp_path: Path) -> None:
+    clean_dir, events = _usage_fixture(tmp_path)
+    base = [
+        "sync",
+        str(events),
+        "--clean-dir",
+        str(clean_dir),
+        "--spec",
+        str(SPEC),
+        "--pql",
+        str(ROOT / "portal" / "pql.yaml"),
+        "--fake",
+    ]
+    previewed = runner.invoke(app, base)
+    assert previewed.exit_code == 0 and "would send" in previewed.stdout
+    report = tmp_path / "sync.json"
+    written = runner.invoke(app, [*base, "--yes", "--report", str(report)])
+    assert written.exit_code == 0, written.output
+    assert "Re-sync with no new usage: 0 records sent." in written.stdout
+    assert report.exists()
+
+
+def test_sync_command_real_mode_saves_state(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from pipelineos.portal.apply import apply_plan
+    from pipelineos.portal.live import read_live
+    from pipelineos.portal.plan import build_plan
+    from pipelineos.spec import load_spec
+
+    clean_dir, events = _usage_fixture(tmp_path)
+    portal = load_spec(SPEC)
+    hs = FakeHubSpot(portal=77)
+    live = read_live(hs, portal)
+    apply_plan(hs, build_plan(portal, live), live)
+    monkeypatch.setenv("PIPELINEOS_HUBSPOT_TOKEN", "tok")
+    monkeypatch.setenv("PIPELINEOS_ALLOWED_PORTAL", "77")
+    get_settings.cache_clear()
+    monkeypatch.setattr("pipelineos.cli.HttpHubSpot.from_settings", lambda settings: hs)
+    state = tmp_path / "state.json"
+    args = [
+        "sync",
+        str(events),
+        "--clean-dir",
+        str(clean_dir),
+        "--spec",
+        str(SPEC),
+        "--pql",
+        str(ROOT / "portal" / "pql.yaml"),
+        "--state",
+        str(state),
+        "--yes",
+    ]
+    first = runner.invoke(app, args)
+    assert first.exit_code == 0, first.output
+    assert state.exists()
+    second = runner.invoke(app, args)
+    assert "sent     0" in second.stdout
+    get_settings.cache_clear()
+
+
+def test_sync_command_unconfigured_portal(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    clean_dir, events = _usage_fixture(tmp_path)
+    _real_client(monkeypatch, portal=5, allowed="5")
+    result = runner.invoke(
+        app,
+        [
+            "sync",
+            str(events),
+            "--clean-dir",
+            str(clean_dir),
+            "--spec",
+            str(SPEC),
+            "--pql",
+            str(ROOT / "portal" / "pql.yaml"),
+            "--yes",
+        ],
+    )
+    assert result.exit_code == 1 and "run pipelineos apply" in result.output
+    get_settings.cache_clear()
