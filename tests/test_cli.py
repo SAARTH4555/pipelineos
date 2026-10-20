@@ -394,3 +394,28 @@ def test_classify_with_ollama_unreachable_falls_back(monkeypatch: pytest.MonkeyP
     result = runner.invoke(app, ["classify", "tests fail randomly", "--ollama"])
     assert result.exit_code == 0 and "keyword_fallback" in result.stdout
     get_settings.cache_clear()
+
+
+def test_readme_results_are_current(monkeypatch: pytest.MonkeyPatch) -> None:
+    import runpy
+    import sys
+
+    monkeypatch.setattr(sys, "argv", ["render_readme", "--check"])
+    runpy.run_path(str(ROOT / "scripts" / "render_readme.py"), run_name="__main__")
+
+
+def test_readme_check_fails_when_stale(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    import runpy
+    import sys
+
+    readme = tmp_path / "README.md"
+    readme.write_text("# x\n<!-- RESULTS:START -->\nstale\n<!-- RESULTS:END -->\n")
+    module = runpy.run_path(str(ROOT / "scripts" / "render_readme.py"))
+    monkeypatch.setitem(module["main"].__globals__, "README", readme)
+    monkeypatch.setattr(sys, "argv", ["render_readme", "--check"])
+    with pytest.raises(SystemExit) as info:
+        module["main"]()
+    assert info.value.code == 1
+    monkeypatch.setattr(sys, "argv", ["render_readme"])
+    module["main"]()
+    assert "### Data cleanup" in readme.read_text()

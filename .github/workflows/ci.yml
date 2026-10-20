@@ -26,6 +26,8 @@ jobs:
         run: |
           uv run pipelineos validate
           uv run pipelineos dictionary --check
+      - name: README results match committed results/*.json
+        run: uv run python scripts/render_readme.py --check
 
   test:
     needs: quality

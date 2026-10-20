@@ -37,7 +37,7 @@
     "sources": {
       "ollama": 48
     },
-    "seconds_per_answer": 2.321,
+    "seconds_per_answer": 2.118,
     "misses": [
       {
         "id": 24,
@@ -116,7 +116,7 @@
     "sources": {
       "ollama": 24
     },
-    "seconds_per_answer": 2.41,
+    "seconds_per_answer": 1.728,
     "misses": [
       {
         "id": 112,

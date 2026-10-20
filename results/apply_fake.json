@@ -1,0 +1,13 @@
+{
+  "applied": 42,
+  "changes_after_replan": 0,
+  "manual_checklist_items": 6,
+  "plan": {
+    "create": 42,
+    "manual": 0,
+    "noop": 0,
+    "unmanaged": 1,
+    "update": 0
+  },
+  "stage_required_property_rules": 19
+}

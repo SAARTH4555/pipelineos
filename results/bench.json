@@ -3,8 +3,8 @@
     {
       "people": 1000,
       "rows": 1276,
-      "seconds_best": 0.015,
-      "seconds_median": 0.02,
+      "seconds_best": 0.014,
+      "seconds_median": 0.023,
       "peak_memory_mb": 1.3,
       "comparisons": 327,
       "naive_comparisons": 788140,
@@ -31,8 +31,8 @@
     {
       "people": 10000,
       "rows": 12653,
-      "seconds_best": 0.145,
-      "seconds_median": 0.147,
+      "seconds_best": 0.144,
+      "seconds_median": 0.151,
       "peak_memory_mb": 13.3,
       "comparisons": 4192,
       "naive_comparisons": 77407903,
