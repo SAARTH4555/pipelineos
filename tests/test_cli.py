@@ -168,3 +168,12 @@ def test_generate_writes_files_and_report(tmp_path: Path) -> None:
     for name in ("contacts.csv", "companies.csv", "truth_contacts.csv", "summary.json"):
         assert (out / name).exists()
     assert report.read_text() == (out / "summary.json").read_text()
+
+
+def test_clean_command(tmp_path: Path) -> None:
+    raw, out, report = tmp_path / "raw", tmp_path / "clean", tmp_path / "cleanup.json"
+    assert runner.invoke(app, ["generate", "--n", "300", "--out", str(raw)]).exit_code == 0
+    result = runner.invoke(app, ["clean", str(raw), "--out", str(out), "--report", str(report)])
+    assert result.exit_code == 0, result.output
+    assert "golden" in result.stdout and "vs ground truth: precision" in result.stdout
+    assert report.exists() and (out / "report.json").exists()

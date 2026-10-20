@@ -12,6 +12,7 @@ from typing import Annotated
 import typer
 
 from pipelineos import __version__
+from pipelineos.data.clean import clean, write_clean
 from pipelineos.data.generate import GenConfig, generate, write_dataset, write_summary
 from pipelineos.guard import GuardError, WriteMode, authorize_writes
 from pipelineos.hubspot import FakeHubSpot, HttpHubSpot, HubSpotClient, HubSpotError
@@ -199,3 +200,31 @@ def generate_cmd(
         f"wrote {summary['contact_rows']} contact rows ({summary['duplicate_rows']} duplicates) "
         f"and {summary['company_rows']} company rows to {out}"
     )
+
+
+@app.command(name="clean")
+def clean_cmd(
+    raw: Annotated[Path, typer.Argument(help="Directory with contacts.csv and companies.csv.")] = (
+        Path("data/raw")
+    ),
+    out: Annotated[Path, typer.Option(help="Where golden records go.")] = Path("data/clean"),
+    report: Annotated[Path | None, typer.Option(help="Also write the report JSON here.")] = None,
+) -> None:
+    """Normalize, dedupe and merge a raw import into golden records."""
+    result = clean(raw)
+    write_clean(result, out)
+    write_summary(result.report, out / "report.json")
+    if report is not None:
+        write_summary(result.report, report)
+    r = result.report
+    before = r["quality_before"]["score"]  # type: ignore[index]
+    after = r["quality_after"]["score"]  # type: ignore[index]
+    contacts = r["contacts"]
+    typer.echo(
+        f"contacts: {contacts['rows_in']} rows -> {contacts['golden_out']} golden "  # type: ignore[index]
+        f"({contacts['merged_away']} merged, {contacts['rejected']} rejected); "  # type: ignore[index]
+        f"quality {before} -> {after}"
+    )
+    if "accuracy_contacts" in r:
+        pw = r["accuracy_contacts"]["pairwise"]  # type: ignore[index]
+        typer.echo(f"vs ground truth: precision {pw['precision']}, recall {pw['recall']}")

@@ -1,0 +1,34 @@
+{
+  "companies": 375,
+  "company_rows": 480,
+  "config": {
+    "dirty_fraction": 0.2,
+    "n": 3000,
+    "seed": 7
+  },
+  "contact_rows": 3827,
+  "duplicate_rows": 766,
+  "duplicates_by_kind": {
+    "alt_work_email": 257,
+    "email_variant": 220,
+    "exact": 203,
+    "gmail_alias": 12,
+    "personal_email": 74
+  },
+  "people": 3000,
+  "rows_with_defect": {
+    "company_name_variant": 783,
+    "dup_alt_work_email": 257,
+    "dup_email_variant": 220,
+    "dup_exact": 203,
+    "dup_gmail_alias": 12,
+    "dup_personal_email": 74,
+    "email_case_space": 738,
+    "freemail": 564,
+    "invalid_email": 61,
+    "missing_website": 225,
+    "name_case_space": 1339,
+    "phone_format": 526,
+    "website_format": 529
+  }
+}
