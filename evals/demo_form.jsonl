@@ -1,0 +1,48 @@
+{"id": 1, "text": "Our test suite fails randomly on CI maybe 1 in 5 runs and we just hit retry until it goes green. 40 engineers lose hours to this every week.", "use_case": "flaky_tests", "enterprise_signals": false, "team_size": 40}
+{"id": 2, "text": "Builds take 45 minutes. We want to split tests across runners and cut that in half.", "use_case": "slow_ci", "enterprise_signals": false, "team_size": null}
+{"id": 3, "text": "We need SSO with Okta and audit logs before security will approve any new tool. About 600 developers across 3 business units. Mostly flaky integration tests.", "use_case": "flaky_tests", "enterprise_signals": true, "team_size": 600}
+{"id": 4, "text": "Is there a student discount? Doing a class project.", "use_case": "other", "enterprise_signals": false, "team_size": null}
+{"id": 5, "text": "Nobody knows which tests fail the most or who owns them. I want a dashboard per team with failure trends.", "use_case": "test_visibility", "enterprise_signals": false, "team_size": null}
+{"id": 6, "text": "SOC 2 auditors want evidence that every release passed its test suite. Today we screenshot Jenkins. Need retention of test results for 12 months.", "use_case": "compliance", "enterprise_signals": true, "team_size": null}
+{"id": 7, "text": "intermittent failures in our cypress e2e tests, pass locally fail in CI. small team (6 devs)", "use_case": "flaky_tests", "enterprise_signals": false, "team_size": 6}
+{"id": 8, "text": "Our GitHub Actions queue times are brutal, PRs wait 30+ min for checks. ~120 engineers.", "use_case": "slow_ci", "enterprise_signals": false, "team_size": 120}
+{"id": 9, "text": "We run self-hosted runners in our own VPC and can't send code outside. Do you support on-prem? Looking at test analytics across 200 repos.", "use_case": "test_visibility", "enterprise_signals": true, "team_size": null}
+{"id": 10, "text": "Interested in partnering, we're a CI consultancy and resell tools to our clients.", "use_case": "other", "enterprise_signals": false, "team_size": null}
+{"id": 11, "text": "flaky tests are killing our merge queue. we quarantine by hand in a spreadsheet lol", "use_case": "flaky_tests", "enterprise_signals": false, "team_size": null}
+{"id": 12, "text": "Need to know our slowest tests so we can parallelize. Pipeline is 1h10m end to end.", "use_case": "slow_ci", "enterprise_signals": false, "team_size": null}
+{"id": 13, "text": "We're a bank. Change management requires an audit trail of test runs linked to each deploy, and we need a DPA and data residency in the EU. 1,500 engineers.", "use_case": "compliance", "enterprise_signals": true, "team_size": 1500}
+{"id": 14, "text": "What does pricing look like for 25 people?", "use_case": "other", "enterprise_signals": false, "team_size": 25}
+{"id": 15, "text": "I'd like reporting across all our monorepo packages - pass rates, durations, owners. Leadership keeps asking for test health numbers.", "use_case": "test_visibility", "enterprise_signals": false, "team_size": null}
+{"id": 16, "text": "Our jest suite has nondeterministic failures from shared state. We retry 3x on every job which makes CI slow too.", "use_case": "flaky_tests", "enterprise_signals": false, "team_size": null}
+{"id": 17, "text": "Can you cut our build times? Test stage alone is 35 min on every PR. Team of 15.", "use_case": "slow_ci", "enterprise_signals": false, "team_size": 15}
+{"id": 18, "text": "Procurement needs your security questionnaire and a vendor risk review before a trial. We have ~3000 devs and a mess of flaky selenium tests.", "use_case": "flaky_tests", "enterprise_signals": true, "team_size": 3000}
+{"id": 19, "text": "just exploring", "use_case": "other", "enterprise_signals": false, "team_size": null}
+{"id": 20, "text": "We have zero visibility into test failures across 40 microservices. Which service breaks the build most?", "use_case": "test_visibility", "enterprise_signals": false, "team_size": null}
+{"id": 21, "text": "FDA regulated medical device software. We need traceable, retained test evidence per release for audits.", "use_case": "compliance", "enterprise_signals": true, "team_size": null}
+{"id": 22, "text": "tests pass then fail with no code change. timing issues in our android emulator tests", "use_case": "flaky_tests", "enterprise_signals": false, "team_size": null}
+{"id": 23, "text": "We want test impact analysis so we only run tests affected by the change. CI costs are out of control and runs take forever.", "use_case": "slow_ci", "enterprise_signals": false, "team_size": null}
+{"id": 24, "text": "Looking for an enterprise plan with SAML SSO, SCIM provisioning and audit logs. Use case is mostly understanding which tests are unreliable. 800 engineers.", "use_case": "flaky_tests", "enterprise_signals": true, "team_size": 800}
+{"id": 25, "text": "Do you have a job opening for SDETs?", "use_case": "other", "enterprise_signals": false, "team_size": null}
+{"id": 26, "text": "Want a weekly report of test pass rate and duration trends I can send to our VP of Eng.", "use_case": "test_visibility", "enterprise_signals": false, "team_size": null}
+{"id": 27, "text": "ISO 27001 audit coming up - need to show automated testing controls and keep logs of test executions.", "use_case": "compliance", "enterprise_signals": true, "team_size": null}
+{"id": 28, "text": "our playwright suite is flaky af. 12 engineers, startup.", "use_case": "flaky_tests", "enterprise_signals": false, "team_size": 12}
+{"id": 29, "text": "Builds are slow because we run the full suite every commit. Need smarter test selection and caching. ~60 devs", "use_case": "slow_ci", "enterprise_signals": false, "team_size": 60}
+{"id": 30, "text": "We need everything to run on-premise, air-gapped. Defense contractor. Main problem is slow pipelines (2 hours).", "use_case": "slow_ci", "enterprise_signals": true, "team_size": null}
+{"id": 31, "text": "Can I integrate with Buildkite? Want to track test failures over time per branch.", "use_case": "test_visibility", "enterprise_signals": false, "team_size": null}
+{"id": 32, "text": "Hi, saw your talk at the conference. Would love a demo.", "use_case": "other", "enterprise_signals": false, "team_size": null}
+{"id": 33, "text": "Random test failures in our Go services, race conditions probably. Rerun culture has to stop. 250 engineers.", "use_case": "flaky_tests", "enterprise_signals": false, "team_size": 250}
+{"id": 34, "text": "CI takes too long and developers are context switching while they wait. Need faster feedback.", "use_case": "slow_ci", "enterprise_signals": false, "team_size": null}
+{"id": 35, "text": "Auditors asked for proof that tests ran before each production change for the last year. HIPAA environment.", "use_case": "compliance", "enterprise_signals": true, "team_size": null}
+{"id": 36, "text": "Which tests are the slowest and which are flakiest? Want one place to see test health for 9 teams.", "use_case": "test_visibility", "enterprise_signals": false, "team_size": null}
+{"id": 37, "text": "We'd need an MSA and your SOC 2 Type II report. Global team of 4,000 engineers. Goal: stop flaky tests from blocking releases.", "use_case": "flaky_tests", "enterprise_signals": true, "team_size": 4000}
+{"id": 38, "text": "pricing?", "use_case": "other", "enterprise_signals": false, "team_size": null}
+{"id": 39, "text": "Our iOS UI tests time out intermittently on CI. 20 iOS devs.", "use_case": "flaky_tests", "enterprise_signals": false, "team_size": 20}
+{"id": 40, "text": "Test sharding across 50 machines - can you help balance by historical duration? Our critical path is the test job.", "use_case": "slow_ci", "enterprise_signals": false, "team_size": null}
+{"id": 41, "text": "Need test results kept for 7 years for regulatory reasons, with an export for auditors.", "use_case": "compliance", "enterprise_signals": true, "team_size": null}
+{"id": 42, "text": "I want to see test coverage of failures by team and which code owners own broken tests.", "use_case": "test_visibility", "enterprise_signals": false, "team_size": null}
+{"id": 43, "text": "Evaluating tools for our platform team. Requirements: SSO, role-based access, audit log. Pain: flaky tests and slow builds, mostly flaky.", "use_case": "flaky_tests", "enterprise_signals": true, "team_size": null}
+{"id": 44, "text": "We are a 5 person startup and our CI is slow, 20 min per PR.", "use_case": "slow_ci", "enterprise_signals": false, "team_size": 5}
+{"id": 45, "text": "test flakyness is our #1 dev complaint in the survey. 400 engineers", "use_case": "flaky_tests", "enterprise_signals": false, "team_size": 400}
+{"id": 46, "text": "Need dashboards for engineering managers showing test reliability per squad.", "use_case": "test_visibility", "enterprise_signals": false, "team_size": null}
+{"id": 47, "text": "Writing a blog post comparing CI tools, can I interview someone?", "use_case": "other", "enterprise_signals": false, "team_size": null}
+{"id": 48, "text": "Our pipeline is slow AND flaky but the flakiness is what hurts - people ignore red builds now. 90 devs, need data residency in Germany.", "use_case": "flaky_tests", "enterprise_signals": true, "team_size": 90}

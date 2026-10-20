@@ -1,0 +1,24 @@
+{"id": 101, "text": "Our end-to-end suite is brittle - sporadic red builds that go green on a second run. Around 70 developers.", "use_case": "flaky_tests", "enterprise_signals": false, "team_size": 70}
+{"id": 102, "text": "CI is the bottleneck for shipping. Merges sit for an hour waiting on checks.", "use_case": "slow_ci", "enterprise_signals": false, "team_size": null}
+{"id": 103, "text": "We authenticate everything through Microsoft Entra ID and need SCIM. Headcount 300 in engineering. Want to understand test reliability.", "use_case": "flaky_tests", "enterprise_signals": true, "team_size": 300}
+{"id": 104, "text": "Hoping to get insight into our test runs - who broke what, and how often.", "use_case": "test_visibility", "enterprise_signals": false, "team_size": null}
+{"id": 105, "text": "PCI DSS assessors want proof our payment service changes were tested. Keep test logs for a year.", "use_case": "compliance", "enterprise_signals": true, "team_size": null}
+{"id": 106, "text": "Can we get a quote for 40 seats?", "use_case": "other", "enterprise_signals": false, "team_size": null}
+{"id": 107, "text": "Tests that sometimes pass and sometimes don't, it's eroding trust in CI. We're a team of 9.", "use_case": "flaky_tests", "enterprise_signals": false, "team_size": 9}
+{"id": 108, "text": "Our pipelines crawl. A one-line change takes 50 minutes to validate.", "use_case": "slow_ci", "enterprise_signals": false, "team_size": null}
+{"id": 109, "text": "Must be deployable in our private cloud, no SaaS allowed by infosec. ~1,000 engineers. Goal is faster pipelines.", "use_case": "slow_ci", "enterprise_signals": true, "team_size": 1000}
+{"id": 110, "text": "Engineering leadership wants a scorecard of test suite health by product area every sprint.", "use_case": "test_visibility", "enterprise_signals": false, "team_size": null}
+{"id": 111, "text": "We're preparing for SOX. Need a record that automated tests gate every release.", "use_case": "compliance", "enterprise_signals": true, "team_size": null}
+{"id": 112, "text": "Following up from the webinar, curious what you do.", "use_case": "other", "enterprise_signals": false, "team_size": null}
+{"id": 113, "text": "Our Rails specs fail on CI but never on laptops, ordering dependent I think. 35 engineers.", "use_case": "flaky_tests", "enterprise_signals": false, "team_size": 35}
+{"id": 114, "text": "Want to run only the tests that matter for each PR, full suite is 4 hours.", "use_case": "slow_ci", "enterprise_signals": false, "team_size": null}
+{"id": 115, "text": "Security team will need a pen test report and your vendor assessment. Org has 2,500 developers. We mostly want to kill flaky tests.", "use_case": "flaky_tests", "enterprise_signals": true, "team_size": 2500}
+{"id": 116, "text": "Is there a way to see failure rates per test file over the last 90 days?", "use_case": "test_visibility", "enterprise_signals": false, "team_size": null}
+{"id": 117, "text": "We're an insurer and regulators expect us to retain testing records. Need exports.", "use_case": "compliance", "enterprise_signals": true, "team_size": null}
+{"id": 118, "text": "Do you offer an affiliate program?", "use_case": "other", "enterprise_signals": false, "team_size": null}
+{"id": 119, "text": "Wobbly integration tests against a shared staging DB. We disable them when they get annoying.", "use_case": "flaky_tests", "enterprise_signals": false, "team_size": null}
+{"id": 120, "text": "Developers wait on CI more than they code. We have 150 engineers and a 40 min pipeline.", "use_case": "slow_ci", "enterprise_signals": false, "team_size": 150}
+{"id": 121, "text": "Need SAML login and an admin audit trail. 60 engineers. Want reporting on test outcomes across repos.", "use_case": "test_visibility", "enterprise_signals": true, "team_size": 60}
+{"id": 122, "text": "GDPR - all data must stay in the EU. Our real issue: tests that randomly break the main branch.", "use_case": "flaky_tests", "enterprise_signals": true, "team_size": null}
+{"id": 123, "text": "We have 8 devs and builds are fine, mostly curious about analytics on test durations.", "use_case": "test_visibility", "enterprise_signals": false, "team_size": 8}
+{"id": 124, "text": "not sure yet", "use_case": "other", "enterprise_signals": false, "team_size": null}

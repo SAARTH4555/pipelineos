@@ -345,3 +345,52 @@ def test_sync_command_unconfigured_portal(tmp_path: Path, monkeypatch: pytest.Mo
     )
     assert result.exit_code == 1 and "run pipelineos apply" in result.output
     get_settings.cache_clear()
+
+
+def test_classify_command() -> None:
+    result = runner.invoke(app, ["classify", "Need SSO, 800 engineers, flaky tests"])
+    assert result.exit_code == 0
+    assert "ae_enterprise" in result.stdout and "flaky_tests" in result.stdout
+    sized = runner.invoke(app, ["classify", "slow builds", "--employees", "120"])
+    assert "sdr_mid_market" in sized.stdout
+
+
+def test_route_demos_command(tmp_path: Path) -> None:
+    demos = ROOT / "examples" / "demo_requests.csv"
+    base = ["route-demos", str(demos), "--clean-dir", str(tmp_path), "--spec", str(SPEC), "--fake"]
+    previewed = runner.invoke(app, base)
+    assert previewed.exit_code == 0 and "Preview only" in previewed.stdout
+    written = runner.invoke(app, [*base, "--yes"])
+    assert written.exit_code == 0, written.output
+    assert "Wrote routing for 6 of 6 contacts." in written.stdout
+
+
+def test_route_demos_reports_failed_rows(tmp_path: Path) -> None:
+    demos = tmp_path / "demos.csv"
+    demos.write_text(
+        "email,company_key,employees,demo_request_text\nnot-an-email,,,pricing?\n"
+        "ok@acme.io,,,flaky tests\n"
+    )
+    result = runner.invoke(
+        app,
+        [
+            "route-demos",
+            str(demos),
+            "--clean-dir",
+            str(tmp_path),
+            "--spec",
+            str(SPEC),
+            "--fake",
+            "--yes",
+        ],
+    )
+    assert result.exit_code == 1
+    assert "not-an-email" in result.stdout and "Wrote routing for 1 of 2 contacts." in result.stdout
+
+
+def test_classify_with_ollama_unreachable_falls_back(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("PIPELINEOS_OLLAMA_URL", "http://127.0.0.1:9")
+    get_settings.cache_clear()
+    result = runner.invoke(app, ["classify", "tests fail randomly", "--ollama"])
+    assert result.exit_code == 0 and "keyword_fallback" in result.stdout
+    get_settings.cache_clear()

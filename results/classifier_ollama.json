@@ -1,0 +1,139 @@
+{
+  "dev": {
+    "examples": 48,
+    "accuracy": {
+      "use_case": 0.896,
+      "enterprise_signals": 1.0,
+      "team_size": 0.958,
+      "routing": 1.0
+    },
+    "per_use_case": {
+      "flaky_tests": {
+        "precision": 1.0,
+        "recall": 0.8,
+        "support": 15
+      },
+      "slow_ci": {
+        "precision": 0.769,
+        "recall": 1.0,
+        "support": 10
+      },
+      "test_visibility": {
+        "precision": 0.8,
+        "recall": 0.889,
+        "support": 9
+      },
+      "compliance": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "support": 6
+      },
+      "other": {
+        "precision": 1.0,
+        "recall": 0.875,
+        "support": 8
+      }
+    },
+    "sources": {
+      "ollama": 48
+    },
+    "seconds_per_answer": 2.321,
+    "misses": [
+      {
+        "id": 24,
+        "expected": "flaky_tests",
+        "got": "test_visibility",
+        "expected_queue": "ae_enterprise",
+        "got_queue": "ae_enterprise"
+      },
+      {
+        "id": 36,
+        "expected": "test_visibility",
+        "got": "slow_ci",
+        "expected_queue": "self_serve_nurture",
+        "got_queue": "self_serve_nurture"
+      },
+      {
+        "id": 39,
+        "expected": "flaky_tests",
+        "got": "slow_ci",
+        "expected_queue": "self_serve_nurture",
+        "got_queue": "self_serve_nurture"
+      },
+      {
+        "id": 47,
+        "expected": "other",
+        "got": "test_visibility",
+        "expected_queue": "self_serve_nurture",
+        "got_queue": "self_serve_nurture"
+      },
+      {
+        "id": 48,
+        "expected": "flaky_tests",
+        "got": "slow_ci",
+        "expected_queue": "ae_enterprise",
+        "got_queue": "ae_enterprise"
+      }
+    ],
+    "machine": "arm64 / Python 3.12.13",
+    "provider": "ollama:llama3.1:8b"
+  },
+  "holdout": {
+    "examples": 24,
+    "accuracy": {
+      "use_case": 0.958,
+      "enterprise_signals": 0.917,
+      "team_size": 1.0,
+      "routing": 0.958
+    },
+    "per_use_case": {
+      "flaky_tests": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "support": 7
+      },
+      "slow_ci": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "support": 5
+      },
+      "test_visibility": {
+        "precision": 0.833,
+        "recall": 1.0,
+        "support": 5
+      },
+      "compliance": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "support": 3
+      },
+      "other": {
+        "precision": 1.0,
+        "recall": 0.75,
+        "support": 4
+      }
+    },
+    "sources": {
+      "ollama": 24
+    },
+    "seconds_per_answer": 2.41,
+    "misses": [
+      {
+        "id": 112,
+        "expected": "other",
+        "got": "test_visibility",
+        "expected_queue": "self_serve_nurture",
+        "got_queue": "self_serve_nurture"
+      },
+      {
+        "id": 122,
+        "expected": "flaky_tests",
+        "got": "flaky_tests",
+        "expected_queue": "ae_enterprise",
+        "got_queue": "self_serve_nurture"
+      }
+    ],
+    "machine": "arm64 / Python 3.12.13",
+    "provider": "ollama:llama3.1:8b"
+  }
+}

@@ -1,0 +1,7 @@
+email,company_key,employees,demo_request_text
+maya.chen@ledgerline.io,ledgerline.io,1400,"We need SSO with Okta and audit logs before security signs off. Our Jest suite fails randomly and people just hit rerun."
+omar@tinyforge.dev,tinyforge.dev,8,"CI takes 25 minutes for a small app, want it faster."
+priya.n@carelink.health,carelink.health,220,"HIPAA environment. Auditors want proof every release passed its tests, kept for 6 years."
+lee@gmail.com,,,"just looking around, saw you on hacker news"
+sofia.r@shipyard.co,shipyard.co,90,"Which of our tests fail most and who owns them? Want a weekly report for eng managers."
+dan@brightcart.com,brightcart.com,,"Our e2e tests are brittle and break main twice a week. Team of 30 engineers."
