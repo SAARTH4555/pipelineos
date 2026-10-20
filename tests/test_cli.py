@@ -177,3 +177,35 @@ def test_clean_command(tmp_path: Path) -> None:
     assert result.exit_code == 0, result.output
     assert "golden" in result.stdout and "vs ground truth: precision" in result.stdout
     assert report.exists() and (out / "report.json").exists()
+
+
+def test_load_command_preview_write_and_failure(tmp_path: Path) -> None:
+    raw, clean_dir = tmp_path / "raw", tmp_path / "clean"
+    runner.invoke(app, ["generate", "--n", "200", "--out", str(raw)])
+    runner.invoke(app, ["clean", str(raw), "--out", str(clean_dir)])
+    base = ["load", str(clean_dir), "--fake", "--spec", str(SPEC)]
+
+    previewed = runner.invoke(app, base)
+    assert previewed.exit_code == 0 and "Preview only" in previewed.stdout
+
+    report = tmp_path / "load.json"
+    written = runner.invoke(app, [*base, "--yes", "--report", str(report)])
+    assert written.exit_code == 0, written.output
+    assert "0 failed" in written.stdout and report.exists()
+
+    rows = (clean_dir / "contacts.csv").read_text().splitlines()
+    rows[1] = rows[1].replace(rows[1].split(",")[8], "tiktok", 1)  # invalid signup_source
+    (clean_dir / "contacts.csv").write_text("\n".join(rows) + "\n")
+    failed = runner.invoke(app, [*base, "--yes"])
+    assert failed.exit_code == 1
+    assert "1 failed" in failed.stdout and "not a valid option" in failed.stdout
+
+
+def test_load_refuses_wrong_portal(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    raw, clean_dir = tmp_path / "raw", tmp_path / "clean"
+    runner.invoke(app, ["generate", "--n", "50", "--out", str(raw)])
+    runner.invoke(app, ["clean", str(raw), "--out", str(clean_dir)])
+    _real_client(monkeypatch, portal=1, allowed="2")
+    result = runner.invoke(app, ["load", str(clean_dir), "--yes", "--spec", str(SPEC)])
+    assert result.exit_code == 1 and "refusing to write" in result.output
+    get_settings.cache_clear()

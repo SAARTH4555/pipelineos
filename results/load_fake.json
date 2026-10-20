@@ -1,0 +1,18 @@
+{
+  "associations": 2966,
+  "companies": {
+    "batches": 4,
+    "created": 374,
+    "failed": 0,
+    "first_errors": [],
+    "updated": 0
+  },
+  "contacts": {
+    "batches": 30,
+    "created": 2995,
+    "failed": 0,
+    "first_errors": [],
+    "updated": 0
+  },
+  "skipped_associations": 0
+}

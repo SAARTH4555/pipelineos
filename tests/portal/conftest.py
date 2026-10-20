@@ -1,9 +1,6 @@
 from __future__ import annotations
 
 import copy
-from pathlib import Path
-
-import pytest
 
 from pipelineos.hubspot.client import STANDARD_OBJECT_IDS
 from pipelineos.portal.live import LiveObject, LiveState
@@ -13,15 +10,8 @@ from pipelineos.portal.plan import (
     property_payload,
     schema_payload,
 )
-from pipelineos.spec import PortalSpec, load_spec
+from pipelineos.spec import PortalSpec
 from pipelineos.spec.models import DEFAULT_GROUPS
-
-SPEC_PATH = Path(__file__).resolve().parents[2] / "portal" / "pipelineos.yaml"
-
-
-@pytest.fixture
-def spec() -> PortalSpec:
-    return load_spec(SPEC_PATH)
 
 
 def converged(spec: PortalSpec) -> LiveState:
