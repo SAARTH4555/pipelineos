@@ -51,6 +51,13 @@ class Paths:
     def association_labels(self, from_type: str, to_type: str) -> str:
         return f"/crm/associations/{self.version}/{from_type}/{to_type}/labels"
 
+    def validation_rules(self, object_type_id: str) -> str:
+        return f"/crm/property-validations/{self.version}/{object_type_id}"
+
+    def validation_rule(self, object_type_id: str, property_name: str, rule_type: str) -> str:
+        base = self.validation_rules(object_type_id)
+        return f"{base}/{property_name}/rule-type/{rule_type}"
+
     def batch_upsert(self, object_type: str) -> str:
         return f"/crm/objects/{self.version}/{object_type}/batch/upsert"
 

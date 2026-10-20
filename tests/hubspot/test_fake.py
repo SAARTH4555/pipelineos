@@ -313,3 +313,76 @@ def test_scripted_failures_and_call_log() -> None:
     hs.create_property_group("deals", {"name": "g", "label": "G"})
     assert hs.calls == [("list_schemas", ""), ("get_portal", ""), ("create_group", "deals")]
     assert hs.writes == [("create_group", "deals")]
+
+
+def test_validation_rules_are_enforced_on_writes() -> None:
+    hs = FakeHubSpot()
+    hs.create_property("companies", unique_prop("company_key"))
+    hs.create_property(
+        "companies",
+        {
+            "name": "pql_score",
+            "label": "PQL",
+            "groupName": "companyinformation",
+            "type": "number",
+            "fieldType": "number",
+        },
+    )
+    hs.put_validation_rule("0-2", "company_key", "DOMAIN", {"ruleArguments": []})
+    hs.put_validation_rule("0-2", "company_key", "FORMAT", {"ruleArguments": ["LOWER"]})
+    hs.put_validation_rule("companies", "pql_score", "MAX_NUMBER", {"ruleArguments": [100]})
+    hs.put_validation_rule("companies", "pql_score", "MIN_NUMBER", {"ruleArguments": ["0"]})
+    hs.put_validation_rule("companies", "name", "MIN_LENGTH", {"ruleArguments": ["2"]})
+    hs.put_validation_rule("companies", "name", "MAX_LENGTH", {"ruleArguments": ["40"]})
+    hs.put_validation_rule("companies", "name", "WHITESPACE", {"ruleArguments": ["TRIM"]})
+    hs.put_validation_rule("companies", "domain", "REGEX", {"ruleArguments": ["\\.", "dot"]})
+    hs.put_validation_rule("companies", "industry", "SPECIAL_CHARACTERS", {})
+    hs.create_property("contacts", unique_prop("backup_email", "contactinformation"))
+    hs.put_validation_rule("0-1", "backup_email", "EMAIL", {"ruleArguments": []})
+    hs.put_validation_rule("0-1", "firstname", "FORMAT", {"ruleArguments": ["UPPER"]})
+    with pytest.raises(HubSpotError, match="not found"):
+        hs.put_validation_rule("0-2", "ghost", "DOMAIN", {})
+
+    rows = hs.list_validation_rules("0-2")
+    assert {
+        "propertyName": "pql_score",
+        "ruleType": "MAX_NUMBER",
+        "ruleArguments": ["100"],
+        "shouldApplyNormalization": False,
+    } in rows
+
+    result = hs.batch_upsert(
+        "companies",
+        "company_key",
+        [
+            UpsertInput("acme.io", {"pql_score": "55", "name": "Acme", "domain": "acme.io"}),
+            UpsertInput("Acme.IO", {}),
+            UpsertInput("not a domain", {}),
+            UpsertInput("b.io", {"pql_score": "101"}),
+            UpsertInput("c.io", {"pql_score": "-1"}),
+            UpsertInput("d.io", {"name": "x"}),
+            UpsertInput("e.io", {"name": " padded"}),
+            UpsertInput("f.io", {"name": "y" * 41}),
+            UpsertInput("g.io", {"domain": "nodot"}),
+        ],
+    )
+    assert result.created == 1
+    assert [e.key for e in result.errors] == [
+        "Acme.IO",
+        "not a domain",
+        "b.io",
+        "c.io",
+        "d.io",
+        "e.io",
+        "f.io",
+        "g.io",
+    ]
+    contacts = hs.batch_upsert(
+        "contacts",
+        "email",
+        [
+            UpsertInput("a@x.io", {"backup_email": "nope", "firstname": "ANA"}),
+            UpsertInput("b@x.io", {"firstname": "Ana"}),
+        ],
+    )
+    assert [e.key for e in contacts.errors] == ["a@x.io", "b@x.io"]

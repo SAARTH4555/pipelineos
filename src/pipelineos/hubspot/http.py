@@ -173,6 +173,18 @@ class HttpHubSpot:
     def create_association_label(self, from_type: str, to_type: str, label: JSON) -> JSON:
         return self._request("POST", self._paths.association_labels(from_type, to_type), label)
 
+    # -- property validation rules -----------------------------------------------------------
+
+    def list_validation_rules(self, object_type_id: str) -> list[JSON]:
+        rows = self._results("GET", self._paths.validation_rules(object_type_id))
+        return flatten_validation_rules(rows)
+
+    def put_validation_rule(
+        self, object_type_id: str, property_name: str, rule_type: str, body: JSON
+    ) -> None:
+        path = self._paths.validation_rule(object_type_id, property_name, rule_type)
+        self._request("PUT", path, body)
+
     # -- records -----------------------------------------------------------------------------
 
     def batch_upsert(
@@ -243,6 +255,23 @@ def parse_batch_response(data: JSON, id_property: str) -> BatchResult:
             )
         )
     return result
+
+
+def flatten_validation_rules(rows: list[JSON]) -> list[JSON]:
+    """Accept per-property groups (``propertyValidationRules: [...]``) or already-flat rows.
+
+    The list endpoint's exact response shape was not confirmed against a live portal, so both
+    plausible shapes are normalised here, in one place.
+    """
+    flat: list[JSON] = []
+    for row in rows:
+        nested = row.get("propertyValidationRules")
+        if nested is None:
+            flat.append(row)
+            continue
+        for rule in nested:
+            flat.append({"propertyName": row.get("propertyName"), **rule})
+    return flat
 
 
 def _error_from(resp: httpx.Response) -> HubSpotError:
