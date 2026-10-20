@@ -12,13 +12,29 @@ from typing import Annotated
 import typer
 
 from pipelineos import __version__
-from pipelineos.spec import SpecError, load_spec
+from pipelineos.guard import GuardError, WriteMode, authorize_writes
+from pipelineos.hubspot import FakeHubSpot, HttpHubSpot, HubSpotClient, HubSpotError
+from pipelineos.portal.apply import apply_plan
+from pipelineos.portal.live import read_live
+from pipelineos.portal.plan import build_plan
+from pipelineos.portal.render import render_apply, render_checklist, render_plan
+from pipelineos.settings import get_settings
+from pipelineos.spec import PortalSpec, SpecError, load_spec
 from pipelineos.spec.docs import render_field_dictionary
 
 DEFAULT_SPEC = Path("portal/pipelineos.yaml")
 DEFAULT_DICTIONARY = Path("docs/field-dictionary.md")
 
 SpecOption = Annotated[Path, typer.Option("--spec", help="Portal spec YAML.")]
+FakeOption = Annotated[
+    bool, typer.Option("--fake", help="Run against an empty in-memory HubSpot (no token needed).")
+]
+YesOption = Annotated[bool, typer.Option("--yes", help="Actually write. Without it: preview.")]
+
+# `plan` exit codes, like `terraform plan -detailed-exitcode`, so CI can gate on drift.
+EXIT_NO_CHANGES = 0
+EXIT_ERROR = 1
+EXIT_CHANGES_PENDING = 2
 
 app = typer.Typer(
     help="HubSpot RevOps build as code.",
@@ -81,3 +97,84 @@ def dictionary(
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(rendered)
     typer.echo(f"wrote {out}")
+
+
+def _load(spec_path: Path) -> PortalSpec:
+    try:
+        return load_spec(spec_path)
+    except SpecError as exc:
+        for problem in exc.problems:
+            typer.echo(f"error: {problem}", err=True)
+        raise typer.Exit(EXIT_ERROR) from exc
+
+
+def _client(fake: bool) -> tuple[HubSpotClient, int | None]:
+    """The client to use and the portal id writes are allowed against."""
+    if fake:
+        hs = FakeHubSpot()
+        return hs, hs.portal  # in-memory, so writing to it is always safe
+    settings = get_settings()
+    try:
+        return HttpHubSpot.from_settings(settings), settings.allowed_portal
+    except HubSpotError as exc:
+        typer.echo(f"error: {exc.message} (or use --fake)", err=True)
+        raise typer.Exit(EXIT_ERROR) from exc
+
+
+@app.command()
+def plan(
+    spec: SpecOption = DEFAULT_SPEC,
+    fake: FakeOption = False,
+    verbose: Annotated[bool, typer.Option(help="Also list unchanged items.")] = False,
+) -> None:
+    """Show what apply would change. Exit code 2 when changes are pending."""
+    portal = _load(spec)
+    client, _ = _client(fake)
+    try:
+        the_plan = build_plan(portal, read_live(client, portal))
+    except HubSpotError as exc:
+        typer.echo(f"error: {exc}", err=True)
+        raise typer.Exit(EXIT_ERROR) from exc
+    typer.echo(f"PipelineOS plan for {portal.client}\n")
+    typer.echo(render_plan(the_plan, verbose=verbose))
+    typer.echo("\n" + render_checklist(portal))
+    if the_plan.changes:
+        raise typer.Exit(EXIT_CHANGES_PENDING)
+
+
+@app.command()
+def apply(
+    spec: SpecOption = DEFAULT_SPEC, fake: FakeOption = False, yes: YesOption = False
+) -> None:
+    """Create and update what the plan lists. Previews unless --yes; never deletes."""
+    portal = _load(spec)
+    client, allowed = _client(fake)
+    try:
+        live = read_live(client, portal)
+        the_plan = build_plan(portal, live)
+        typer.echo(f"PipelineOS apply for {portal.client}\n")
+        typer.echo(render_plan(the_plan))
+        if not the_plan.changes:
+            typer.echo("\nNothing to apply.")
+            return
+        mode = authorize_writes(client, yes=yes, allowed_portal=allowed)
+        if mode is WriteMode.PREVIEW:
+            typer.echo(
+                f"\nPreview only. Re-run with --yes to apply {len(the_plan.changes)} changes."
+            )
+            return
+        result = apply_plan(client, the_plan, live)
+        typer.echo("\n" + render_apply(result, len(the_plan.changes)))
+        if not result.ok:
+            raise typer.Exit(EXIT_ERROR)
+        after = build_plan(portal, read_live(client, portal))
+        typer.echo(f"Re-plan after apply: {len(after.changes)} changes pending.")
+        typer.echo("\n" + render_checklist(portal))
+        if after.changes:
+            raise typer.Exit(EXIT_ERROR)
+    except GuardError as exc:
+        typer.echo(f"\nerror: {exc}", err=True)
+        raise typer.Exit(EXIT_ERROR) from exc
+    except HubSpotError as exc:
+        typer.echo(f"error: {exc}", err=True)
+        raise typer.Exit(EXIT_ERROR) from exc
