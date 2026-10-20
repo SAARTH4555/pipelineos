@@ -1,0 +1,33 @@
+{
+  "as_of": "2026-10-01",
+  "by_archetype": {
+    "dormant": {
+      "mean_score": 0.0,
+      "pql_rate": 0.0,
+      "workspaces": 41
+    },
+    "enterprise": {
+      "mean_score": 92.1,
+      "pql_rate": 1.0,
+      "workspaces": 14
+    },
+    "evaluating_team": {
+      "mean_score": 76.8,
+      "pql_rate": 0.94,
+      "workspaces": 50
+    },
+    "hobbyist": {
+      "mean_score": 20.8,
+      "pql_rate": 0.0,
+      "workspaces": 113
+    },
+    "paying_team": {
+      "mean_score": 91.8,
+      "pql_rate": 1.0,
+      "workspaces": 22
+    }
+  },
+  "pql": 83,
+  "threshold": 60,
+  "workspaces": 240
+}
