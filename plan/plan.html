@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PipelineOS Plan</title>
+<style>
+:root{--bg:#f7f7f5;--panel:#fff;--ink:#1b1d21;--muted:#5d636e;--line:#e2e3e0;--accent:#c2410c;--todo:#64748b;--prog:#2563eb;--done:#15803d;--blocked:#b91c1c;--crit:#fff4ec}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#121316;--panel:#1b1d22;--ink:#e8e8e6;--muted:#9aa0aa;--line:#2c2f36;--accent:#fb923c;--todo:#94a3b8;--prog:#60a5fa;--done:#4ade80;--blocked:#f87171;--crit:#2a1d14}}
+:root[data-theme="dark"]{--bg:#121316;--panel:#1b1d22;--ink:#e8e8e6;--muted:#9aa0aa;--line:#2c2f36;--accent:#fb923c;--todo:#94a3b8;--prog:#60a5fa;--done:#4ade80;--blocked:#f87171;--crit:#2a1d14}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+.wrap{max-width:980px;margin:0 auto;padding:24px 16px 64px}
+header{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;justify-content:space-between;margin-bottom:16px}
+h1{margin:0;font-size:24px;letter-spacing:-.01em}
+.sub{color:var(--muted);font-size:13px}
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+button,select{font:inherit;font-size:13px;padding:6px 10px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--ink);cursor:pointer}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip[aria-pressed="true"]{border-color:var(--accent);color:var(--accent)}
+.progress{height:6px;background:var(--line);border-radius:6px;overflow:hidden;margin:8px 0 20px}
+.progress>i{display:block;height:100%;background:var(--done)}
+details{background:var(--panel);border:1px solid var(--line);border-radius:12px;margin:10px 0}
+details>summary{list-style:none;cursor:pointer;padding:12px 14px;display:flex;gap:10px;align-items:baseline}
+details>summary::-webkit-details-marker{display:none}
+details>summary::before{content:"▸";color:var(--muted);transition:transform .15s}
+details[open]>summary::before{transform:rotate(90deg)}
+.phase{margin:0 12px 12px;border-radius:10px}
+.task{margin:0 10px 10px;border-radius:10px}
+.task.crit{background:var(--crit);border-left:4px solid var(--accent)}
+.id{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--muted);font-size:13px}
+.title{font-weight:600;flex:1}
+.meta{color:var(--muted);font-size:12px}
+.pill{font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;border:1px solid currentColor;white-space:nowrap}
+.s-todo{color:var(--todo)}.s-in_progress{color:var(--prog)}.s-done{color:var(--done)}.s-blocked{color:var(--blocked)}
+.crit-tag{font-size:11px;color:var(--accent);font-weight:600}
+.body{padding:0 16px 14px 34px;font-size:14px}
+.body h4{margin:10px 0 4px;font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+.body ul{margin:0;padding-left:18px}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px;background:var(--bg);padding:1px 5px;border-radius:5px;word-break:break-word}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:4px 16px}
+.decisions{font-size:13px}
+.decisions dt{font-family:ui-monospace,Menlo,monospace;color:var(--muted);margin-top:6px}
+.decisions dd{margin:0}
+.hidden{display:none}
+@media print{body{background:#fff;color:#000}.bar,.chips,button,select{display:none!important}details{border:1px solid #999;break-inside:avoid}details:not([open])>*:not(summary){display:block}.task.crit{background:#fff;border-left:4px solid #000}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div><h1>PipelineOS — build plan</h1><div class="sub" id="sub"></div></div>
+  <div class="bar">
+    <div class="chips" role="group" aria-label="Filter by status" id="chips"></div>
+    <button id="expand">Expand all</button>
+    <button id="theme" aria-label="Toggle dark mode">Theme</button>
+  </div>
+</header>
+<div class="progress" aria-hidden="true"><i id="pbar"></i></div>
+<div id="tree"></div>
+<details><summary><span class="title">Decisions</span></summary><div class="body"><dl class="decisions" id="dec"></dl></div></details>
+</div>
+<script>
+const PLAN = {"version": "2.0", "feature": "pipelineos", "scope": "medium", "generatedAt": "2026-10-21T00:00:00Z", "decisions": {"q1_scope": "Core four: config-as-code plan/apply, messy data + cleanup, usage sync + PQL, AI form tagging; UI-only steps as printed manual checklist in runbook; workflows API + Clay link out of v1", "q2_architecture": "Declarative plan/apply with stable keys; apply creates/updates only; immutable drift reported as 'needs manual recreate'; never deletes", "q3_libraries": "httpx direct (no hubspot-api-client), pydantic v2 + pydantic-settings, typer, rapidfuzz, faker, tldextract, PyYAML; LLM = local Ollama llama3.1:8b JSON-schema output, env-gated, keyword-rule fallback, behind a Protocol", "q4_pql_model": "Account-level: pql_score + is_pql on Workspace custom object, rolled to Company; Lead Status on contacts; lifecycle stays standard", "q5_time_complexity": "Deterministic keys O(n) then rapidfuzz within blocks O(n*b); 10k contacts < 5 s, O(n) memory", "q6_coverage": "85% branch coverage fail_under", "q7_deployment_risk": "Dry-run by default; --yes to write; refuse unless portal id == PIPELINEOS_ALLOWED_PORTAL", "workflow": "Stacked PRs: one PR per task based on the previous task branch; Archit merges the chain after final review"}, "sprints": [{"id": "1", "name": "PipelineOS v1", "estimateDays": 3, "phases": [{"id": "1.1", "name": "Foundation", "tasks": [{"id": "1.1.1", "title": "Repo scaffold + CI (quality -> test -> build)", "acceptance": ["uv project, src/pipelineos package, Python 3.12, uv.lock committed", "ruff (line 100, E/F/I/UP/B/SIM/RUF), mypy strict on src+tests, pytest + branch coverage fail_under=85", ".github/workflows/ci.yml with quality/test/build jobs, no secrets needed", "Smoke test passes locally and CI is green on the pushed branch"], "estimateHours": 1, "timeComplexity": "n/a", "spaceComplexity": "n/a", "files": ["pyproject.toml", "src/pipelineos/__init__.py", "src/pipelineos/cli.py", "tests/test_cli.py", ".github/workflows/ci.yml", ".gitignore", ".env.example", "README.md"], "dependencies": [], "smokeTest": "uv run ruff check . && uv run ruff format --check . && uv run mypy && uv run pytest --cov && uv build", "ciJobs": ["quality", "test", "build"], "status": "todo", "criticalPath": true}, {"id": "1.1.2", "title": "HubSpot client seam: Protocol, httpx client, in-memory fake, write guard", "acceptance": ["HubSpotClient Protocol covering properties, groups, schemas, pipelines, association labels, batch upsert, batch associate", "HttpxHubSpot: dated API version in one setting, bearer auth, client-side token bucket, jittered backoff on 429/423/5xx with injected sleeper/clock, 207 partial-failure parsing", "FakeHubSpot: in-memory state, enforces HubSpot rules that matter (unique upsert keys, no duplicate ids per batch, batch <= 100, immutable fields)", "WriteGuard: dry-run unless --yes; refuses when portal id != PIPELINEOS_ALLOWED_PORTAL", "httpx.MockTransport tests for retry/backoff sequences and 207 handling"], "estimateHours": 3, "timeComplexity": "O(n) per batch call", "spaceComplexity": "O(batch)", "files": ["src/pipelineos/settings.py", "src/pipelineos/hubspot/client.py", "src/pipelineos/hubspot/http.py", "src/pipelineos/hubspot/fake.py", "src/pipelineos/hubspot/ratelimit.py", "src/pipelineos/guard.py", "tests/hubspot/"], "dependencies": ["1.1.1"], "smokeTest": "uv run pytest tests/hubspot -q && uv run mypy", "ciJobs": ["quality", "test", "build"], "status": "todo", "criticalPath": true}]}, {"id": "1.2", "name": "Portal config as code", "tasks": [{"id": "1.2.1", "title": "Portal spec: pydantic schema + portal/pipelineos.yaml", "acceptance": ["Typed models for property groups, properties (+ validation rules), custom object schema, pipelines/stages (probability 0-1, stable stage ids), association labels, and a manual: section", "pipelineos.yaml models a Series A PLG dev-tools startup: Workspace object (workspace_id unique), company_key unique on companies, PQL fields, lifecycle definitions, New Business + Expansion pipelines", "Spec validation catches: duplicate keys, bad naming convention, probability out of range, unique-property count > 10", "Field dictionary docs/field-dictionary.md generated from the YAML (with --check)"], "estimateHours": 2.5, "timeComplexity": "O(n) in spec size", "spaceComplexity": "O(n)", "files": ["src/pipelineos/spec/models.py", "src/pipelineos/spec/load.py", "portal/pipelineos.yaml", "scripts/gen_field_dictionary.py", "docs/field-dictionary.md", "tests/spec/"], "dependencies": ["1.1.2"], "smokeTest": "uv run pipelineos validate portal/pipelineos.yaml && uv run pytest tests/spec -q", "ciJobs": ["quality", "test", "build"], "status": "todo", "criticalPath": true}, {"id": "1.2.2", "title": "Planner: diff spec vs live portal", "acceptance": ["Pure function plan(spec, live) -> ordered actions: create / update / noop / manual-recreate (immutable drift)", "Ordering respects dependencies: groups -> properties -> schemas -> pipelines -> association labels", "Never emits deletes; fields present live but absent in spec reported as 'unmanaged'", "Second plan after apply on FakeHubSpot is all-noop (idempotency test)"], "estimateHours": 3, "timeComplexity": "O(n) via dict lookups on stable keys", "spaceComplexity": "O(n)", "files": ["src/pipelineos/portal/plan.py", "src/pipelineos/portal/live.py", "tests/portal/test_plan.py"], "dependencies": ["1.2.1"], "smokeTest": "uv run pytest tests/portal -q", "ciJobs": ["quality", "test", "build"], "status": "todo", "criticalPath": true}, {"id": "1.2.3", "title": "Applier + CLI: pipelineos plan / apply + manual checklist", "acceptance": ["`pipelineos plan` prints a terraform-style table; exit code 2 when changes pending (CI-friendly)", "`pipelineos apply` dry-runs by default, writes only with --yes and allowed portal", "Manual steps (stage-required props, permission sets, teams, dashboards) printed as a checklist from the spec", "End-to-end test: apply to FakeHubSpot from empty, then plan == all noop"], "estimateHours": 2, "timeComplexity": "O(n)", "spaceComplexity": "O(n)", "files": ["src/pipelineos/portal/apply.py", "src/pipelineos/cli.py", "tests/portal/test_apply.py", "tests/test_cli.py"], "dependencies": ["1.2.2"], "smokeTest": "uv run pipelineos plan --fake && uv run pytest -q", "ciJobs": ["quality", "test", "build"], "status": "todo", "criticalPath": true}]}, {"id": "1.3", "name": "Data quality", "tasks": [{"id": "1.3.1", "title": "Seeded messy-data generator with ground truth", "acceptance": ["GenConfig(n, dirty_fraction, seed) -> contacts + companies CSV with labelled defects: exact dupes, fuzzy-name dupes, case/whitespace noise, free-mail domains, missing domain, phone formats, typo'd emails", "Ground-truth cluster ids for every duplicate group; same seed => byte-identical output", "Defect mix and counts written to results/generated.json"], "estimateHours": 2, "timeComplexity": "O(n)", "spaceComplexity": "O(n)", "files": ["src/pipelineos/data/generate.py", "tests/data/test_generate.py"], "dependencies": ["1.1.1"], "smokeTest": "uv run pipelineos generate --n 3000 --seed 7 --out data/raw && uv run pytest tests/data -q", "ciJobs": ["quality", "test", "build"], "status": "todo", "criticalPath": false}, {"id": "1.3.2", "title": "Normalize + dedupe (exact keys, blocked fuzzy) + quality score", "acceptance": ["Normalizers: email, name casing/whitespace, registrable domain via tldextract (offline suffix list), E.164-ish phone, company_key", "Dedupe: exact keys first, then rapidfuzz only within blocks; deterministic survivor selection with merge provenance", "Precision/recall of duplicate detection vs ground truth, before/after quality score -> results/cleanup.json", "Benchmark: 10k contacts < 5 s, recorded in results/bench.json"], "estimateHours": 4, "timeComplexity": "O(n*b), b = mean block size; never O(n^2) across blocks", "spaceComplexity": "O(n)", "files": ["src/pipelineos/data/normalize.py", "src/pipelineos/data/dedupe.py", "src/pipelineos/data/quality.py", "scripts/bench_dedupe.py", "tests/data/"], "dependencies": ["1.3.1"], "smokeTest": "uv run pipelineos clean data/raw --out data/clean && uv run python scripts/bench_dedupe.py --n 10000", "ciJobs": ["quality", "test", "build"], "status": "todo", "criticalPath": false}, {"id": "1.3.3", "title": "Push cleaned records: batch upsert by company_key / email", "acceptance": ["`pipelineos load data/clean` upserts companies (company_key) and contacts (email) in batches of <=100 with client-side dedupe per batch", "Associates contacts to companies via associations v4 batch", "Dry-run by default; reports created/updated/failed with 207 errors surfaced per record", "Re-running is idempotent on FakeHubSpot (no new records)"], "estimateHours": 2, "timeComplexity": "O(n), ceil(n/100) API calls", "spaceComplexity": "O(batch)", "files": ["src/pipelineos/data/load.py", "tests/data/test_load.py"], "dependencies": ["1.3.2", "1.2.3"], "smokeTest": "uv run pipelineos load data/clean --fake && uv run pytest tests/data -q", "ciJobs": ["quality", "test", "build"], "status": "todo", "criticalPath": false}]}, {"id": "1.4", "name": "Product-usage sync + PQL", "tasks": [{"id": "1.4.1", "title": "Usage events + explainable PQL score", "acceptance": ["Event model (signup, seat_added, project_created, api_key_created, active_day) and seeded generator tied to generated companies", "Aggregate events -> Workspace facts (seats, active days 14d, key actions); pure scoring function with documented points + threshold, returns score and reasons", "Score config lives in YAML; table-driven tests cover each rule and threshold edge"], "estimateHours": 2.5, "timeComplexity": "O(e) over events", "spaceComplexity": "O(w) workspaces", "files": ["src/pipelineos/usage/events.py", "src/pipelineos/usage/score.py", "portal/pql.yaml", "tests/usage/"], "dependencies": ["1.2.1"], "smokeTest": "uv run pytest tests/usage -q", "ciJobs": ["quality", "test", "build"], "status": "todo", "criticalPath": true}, {"id": "1.4.2", "title": "Sync engine: Workspace/Company/Contact upserts + associations, skip-unchanged", "acceptance": ["`pipelineos sync` upserts Workspace (workspace_id), rolls is_pql/pql_score to Company, sets Lead Status on contacts", "Content-hash cache: unchanged records are not re-sent; second run sends 0 writes", "Association v4 batch Workspace<->Company, Workspace<->Contact with labels (e.g. Owner, Member)", "Dry-run default, guard enforced; sync report written to results/sync.json"], "estimateHours": 3, "timeComplexity": "O(w + c), ceil(n/100) API calls", "spaceComplexity": "O(w + c)", "files": ["src/pipelineos/usage/sync.py", "src/pipelineos/usage/state.py", "tests/usage/test_sync.py"], "dependencies": ["1.4.1", "1.2.3"], "smokeTest": "uv run pipelineos sync --fake && uv run pytest tests/usage -q", "ciJobs": ["quality", "test", "build"], "status": "todo", "criticalPath": true}]}, {"id": "1.5", "name": "AI routing", "tasks": [{"id": "1.5.1", "title": "Demo-form classifier (Ollama + keyword fallback) + routing + eval", "acceptance": ["Classifier Protocol; OllamaClassifier with JSON-schema constrained output; KeywordClassifier fallback used when Ollama is unset/unreachable", "Routing rules map (use_case, segment, company size) -> routing_queue property", "Hand-labelled eval set (>=40 answers) with accuracy for both classifiers -> results/classifier.json (Ollama numbers only from a real local run)", "CI never calls a model"], "estimateHours": 3, "timeComplexity": "O(1) per answer", "spaceComplexity": "O(1)", "files": ["src/pipelineos/ai/classify.py", "src/pipelineos/ai/route.py", "evals/demo_form.jsonl", "scripts/eval_classifier.py", "tests/ai/"], "dependencies": ["1.2.1"], "smokeTest": "uv run pytest tests/ai -q && uv run python scripts/eval_classifier.py --provider keyword", "ciJobs": ["quality", "test", "build"], "status": "todo", "criticalPath": false}]}, {"id": "1.6", "name": "Docs, results, live run", "tasks": [{"id": "1.6.1", "title": "README + runbook + results rendering", "acceptance": ["scripts/render_readme.py rewrites RESULTS block from results/*.json; --check runs in CI", "README: pitch, why it matters (maps to a RevOps engagement), architecture diagram, quickstart, demo output, results, testing, layout, next steps", "docs/runbook.md: HubSpot dev/test account setup, service key + scopes, manual checklist, dashboard spec, recovery", "No hand-typed numbers anywhere"], "estimateHours": 2.5, "timeComplexity": "n/a", "spaceComplexity": "n/a", "files": ["README.md", "docs/runbook.md", "docs/architecture.md", "scripts/render_readme.py", ".github/workflows/ci.yml"], "dependencies": ["1.4.2", "1.3.3", "1.5.1"], "smokeTest": "uv run python scripts/render_readme.py --check", "ciJobs": ["quality", "test", "build"], "status": "todo", "criticalPath": true}, {"id": "1.6.2", "title": "Live run against a HubSpot developer test account", "acceptance": ["BLOCKED ON USER: developer account + test account + service key with scopes from runbook", "plan -> apply --yes -> plan shows all noop on the live portal", "load + sync run live; results/live.json + screenshots in docs/img", "Manual checklist completed in UI and screenshotted (dashboard, stage-required props, permission sets)"], "estimateHours": 2, "timeComplexity": "n/a", "spaceComplexity": "n/a", "files": ["results/live.json", "docs/img/"], "dependencies": ["1.6.1"], "smokeTest": "uv run pipelineos plan  # expect all noop after apply", "ciJobs": ["quality", "test", "build"], "status": "blocked", "criticalPath": true}]}]}]};
+const KEY = "plan:" + PLAN.feature;
+const STATUSES = ["todo","in_progress","done","blocked"];
+const LABEL = {todo:"To do",in_progress:"In progress",done:"Done",blocked:"Blocked"};
+function load(){try{const s=JSON.parse(localStorage.getItem(KEY)||"null");if(s&&s.generatedAt===PLAN.generatedAt)return s.statuses}catch(e){}return null}
+function save(st){try{localStorage.setItem(KEY,JSON.stringify({generatedAt:PLAN.generatedAt,statuses:st}))}catch(e){}}
+const tasks=[];PLAN.sprints.forEach(s=>s.phases.forEach(p=>p.tasks.forEach(t=>tasks.push(t))));
+let status=load()||Object.fromEntries(tasks.map(t=>[t.id,t.status]));
+const filter=new Set(STATUSES);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+function render(){
+  const tree=document.getElementById("tree");const open=new Set([...tree.querySelectorAll("details[open]")].map(d=>d.dataset.k));
+  const first=!tree.innerHTML;tree.innerHTML="";
+  PLAN.sprints.forEach(s=>{
+    const sd=document.createElement("details");sd.dataset.k="s"+s.id;sd.open=first||open.has(sd.dataset.k);
+    sd.innerHTML=`<summary><span class="id">Sprint ${esc(s.id)}</span><span class="title">${esc(s.name)}</span><span class="meta">~${s.estimateDays} days</span></summary>`;
+    s.phases.forEach(p=>{
+      const pd=document.createElement("details");pd.className="phase";pd.dataset.k="p"+p.id;pd.open=first||open.has(pd.dataset.k);
+      const hrs=p.tasks.reduce((a,t)=>a+t.estimateHours,0);
+      pd.innerHTML=`<summary><span class="id">${esc(p.id)}</span><span class="title">${esc(p.name)}</span><span class="meta">${hrs}h</span></summary>`;
+      let shown=0;
+      p.tasks.forEach(t=>{
+        const st=status[t.id];if(!filter.has(st))return;shown++;
+        const td=document.createElement("details");td.className="task"+(t.criticalPath?" crit":"");td.dataset.k="t"+t.id;td.open=open.has(td.dataset.k);
+        td.innerHTML=`<summary><span class="id">${esc(t.id)}</span><span class="title">${esc(t.title)}</span>${t.criticalPath?'<span class="crit-tag">critical path</span>':""}<span class="pill s-${st}">${LABEL[st]}</span></summary>
+        <div class="body">
+          <div class="grid meta"><span>Estimate: ${t.estimateHours}h</span><span>Time: ${esc(t.timeComplexity)}</span><span>Space: ${esc(t.spaceComplexity)}</span><span>Depends on: ${t.dependencies.length?t.dependencies.map(esc).join(", "):"—"}</span></div>
+          <h4>Acceptance</h4><ul>${t.acceptance.map(a=>`<li>${esc(a)}</li>`).join("")}</ul>
+          <h4>Files</h4><div>${t.files.map(f=>`<code>${esc(f)}</code>`).join(" ")}</div>
+          <h4>Smoke test</h4><code>${esc(t.smokeTest)}</code>
+          <h4>Status</h4><select data-id="${esc(t.id)}" aria-label="Status for ${esc(t.id)}">${STATUSES.map(x=>`<option value="${x}"${x===st?" selected":""}>${LABEL[x]}</option>`).join("")}</select>
+        </div>`;
+        pd.appendChild(td);
+      });
+      if(shown)sd.appendChild(pd);
+    });
+    tree.appendChild(sd);
+  });
+  tree.querySelectorAll("select[data-id]").forEach(sel=>sel.addEventListener("change",e=>{status[e.target.dataset.id]=e.target.value;save(status);render()}));
+  const done=tasks.filter(t=>status[t.id]==="done").length;
+  document.getElementById("pbar").style.width=(100*done/tasks.length)+"%";
+  document.getElementById("sub").textContent=`${PLAN.scope} scope · ${tasks.length} tasks · ${done} done · ${tasks.filter(t=>t.criticalPath).length} on critical path`;
+}
+const chips=document.getElementById("chips");
+STATUSES.forEach(s=>{const b=document.createElement("button");b.className="chip";b.textContent=LABEL[s];b.setAttribute("aria-pressed","true");
+  b.onclick=()=>{filter.has(s)?filter.delete(s):filter.add(s);b.setAttribute("aria-pressed",filter.has(s));render()};chips.appendChild(b)});
+document.getElementById("expand").onclick=()=>{const all=document.querySelectorAll("#tree details");const anyClosed=[...all].some(d=>!d.open);all.forEach(d=>d.open=anyClosed)};
+const root=document.documentElement;
+try{const t=localStorage.getItem("plan-theme");if(t)root.dataset.theme=t}catch(e){}
+document.getElementById("theme").onclick=()=>{const dark=root.dataset.theme?root.dataset.theme==="dark":matchMedia("(prefers-color-scheme: dark)").matches;root.dataset.theme=dark?"light":"dark";try{localStorage.setItem("plan-theme",root.dataset.theme)}catch(e){}};
+const dec=document.getElementById("dec");Object.entries(PLAN.decisions).forEach(([k,v])=>{dec.insertAdjacentHTML("beforeend",`<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`)});
+render();
+</script>
+</body>
+</html>
