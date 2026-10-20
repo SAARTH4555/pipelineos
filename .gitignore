@@ -1,0 +1,20 @@
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+dist/
+.env
+.coverage
+coverage.xml
+htmlcov/
+.DS_Store
+
+# generated working data (regenerate with `pipelineos generate`)
+data/
+
+# local planning workspace
+.claude-protocol/
+research/
