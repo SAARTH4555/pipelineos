@@ -21,6 +21,7 @@
   "dry_run": false,
   "pql_companies": 83,
   "pql_workspaces": 83,
+  "resync_writes": 0,
   "workspaces": {
     "created": 240,
     "failed": 0,

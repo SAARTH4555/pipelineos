@@ -62,7 +62,7 @@
     "comparisons": 1124,
     "largest_block": 11,
     "naive_comparisons": 7089495,
-    "seconds": 0.073
+    "seconds": 0.075
   },
   "quality_after": {
     "completeness": 0.9903,

@@ -164,7 +164,10 @@ def plan(
 
 @app.command()
 def apply(
-    spec: SpecOption = DEFAULT_SPEC, fake: FakeOption = False, yes: YesOption = False
+    spec: SpecOption = DEFAULT_SPEC,
+    fake: FakeOption = False,
+    yes: YesOption = False,
+    report: Annotated[Path | None, typer.Option(help="Write the apply report JSON here.")] = None,
 ) -> None:
     """Create and update what the plan lists. Previews unless --yes; never deletes."""
     portal = _load(spec)
@@ -189,6 +192,22 @@ def apply(
             raise typer.Exit(EXIT_ERROR)
         after = build_plan(portal, read_live(client, portal))
         typer.echo(f"Re-plan after apply: {len(after.changes)} changes pending.")
+        if report is not None:
+            write_summary(
+                {
+                    "plan": {op.value: n for op, n in the_plan.counts().items()},
+                    "applied": len(result.applied),
+                    "changes_after_replan": len(after.changes),
+                    "manual_checklist_items": render_checklist(portal).count("[ ]"),
+                    "stage_required_property_rules": sum(
+                        len(s.required_properties)
+                        for ps in portal.pipelines.values()
+                        for p in ps
+                        for s in p.stages
+                    ),
+                },
+                report,
+            )
         typer.echo("\n" + render_checklist(portal))
         if after.changes:
             raise typer.Exit(EXIT_ERROR)
@@ -461,13 +480,15 @@ def sync_cmd(
         if dry_run:
             typer.echo("Preview only. Re-run with --yes to write.")
             return
-        if not fake:
-            save_state(state, state_path)
-        if report is not None:
-            write_summary(result.summary(), report)
+        summary = result.summary()
         if fake:
             again = sync(client, facts, results, state, day, dry_run=False)
             typer.echo(f"\nRe-sync with no new usage: {again.writes} records sent.")
+            summary["resync_writes"] = again.writes
+        else:
+            save_state(state, state_path)
+        if report is not None:
+            write_summary(summary, report)
     except (GuardError, HubSpotError) as exc:
         typer.echo(f"error: {exc}", err=True)
         raise typer.Exit(EXIT_ERROR) from exc
