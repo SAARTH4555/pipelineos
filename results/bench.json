@@ -1,0 +1,46 @@
+{
+  "runs": [
+    {
+      "people": 1000,
+      "rows": 1276,
+      "seconds_best": 0.015,
+      "seconds_median": 0.02,
+      "peak_memory_mb": 1.3,
+      "comparisons": 327,
+      "naive_comparisons": 788140,
+      "blocks": 931,
+      "largest_block": 9,
+      "golden_out": 1000,
+      "duplicate_rows_generated": 256,
+      "machine": "arm64 / Python 3.12.13"
+    },
+    {
+      "people": 3000,
+      "rows": 3827,
+      "seconds_best": 0.043,
+      "seconds_median": 0.044,
+      "peak_memory_mb": 4.0,
+      "comparisons": 1124,
+      "naive_comparisons": 7089495,
+      "blocks": 2757,
+      "largest_block": 11,
+      "golden_out": 2995,
+      "duplicate_rows_generated": 766,
+      "machine": "arm64 / Python 3.12.13"
+    },
+    {
+      "people": 10000,
+      "rows": 12653,
+      "seconds_best": 0.145,
+      "seconds_median": 0.147,
+      "peak_memory_mb": 13.3,
+      "comparisons": 4192,
+      "naive_comparisons": 77407903,
+      "blocks": 9075,
+      "largest_block": 19,
+      "golden_out": 9985,
+      "duplicate_rows_generated": 2443,
+      "machine": "arm64 / Python 3.12.13"
+    }
+  ]
+}

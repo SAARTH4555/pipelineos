@@ -1,0 +1,81 @@
+{
+  "accuracy_companies": {
+    "key_accuracy": 0.9917,
+    "pairwise": {
+      "f1": 0.979,
+      "precision": 0.9655,
+      "predicted_pairs": 145,
+      "recall": 0.9929,
+      "true_pairs": 141
+    },
+    "rows_unresolved": 0
+  },
+  "accuracy_contacts": {
+    "duplicate_rate_after": 0.0,
+    "duplicate_rate_before": 0.2034,
+    "duplicates_by_kind": {
+      "alt_work_email": 257,
+      "email_variant": 220,
+      "exact": 203,
+      "gmail_alias": 12,
+      "personal_email": 74
+    },
+    "junk": {
+      "rejected": 61,
+      "rows": 61,
+      "valid_rows_wrongly_rejected": 0
+    },
+    "pairwise": {
+      "f1": 0.9956,
+      "precision": 0.9912,
+      "predicted_pairs": 906,
+      "recall": 1.0,
+      "true_pairs": 898
+    },
+    "recall_by_kind": {
+      "alt_work_email": 1.0,
+      "email_variant": 1.0,
+      "exact": 1.0,
+      "gmail_alias": 1.0,
+      "personal_email": 1.0
+    }
+  },
+  "companies": {
+    "golden_out": 374,
+    "rejected": 0,
+    "rows_in": 480
+  },
+  "contacts": {
+    "golden_out": 2995,
+    "merged_away": 771,
+    "merged_by": {
+      "email_key": 445,
+      "fuzzy_name": 112,
+      "phone": 214,
+      "vetoed_by_phone": 1
+    },
+    "rejected": 61,
+    "rows_in": 3827
+  },
+  "matching": {
+    "blocks": 2757,
+    "comparisons": 1124,
+    "largest_block": 11,
+    "naive_comparisons": 7089495,
+    "seconds": 0.073
+  },
+  "quality_after": {
+    "completeness": 0.9903,
+    "score": 99.8,
+    "standardization": 1.0,
+    "uniqueness": 1.0,
+    "validity": 1.0
+  },
+  "quality_before": {
+    "completeness": 0.9713,
+    "score": 78.4,
+    "standardization": 0.4147,
+    "uniqueness": 0.7646,
+    "validity": 0.9841
+  }
+}
