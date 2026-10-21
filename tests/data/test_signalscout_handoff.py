@@ -41,7 +41,7 @@ def test_signal_columns_load_into_the_consultancy_portal() -> None:
     report = load(hs, HANDOFF, declared(spec))
     assert report.companies.created == 3 and report.companies.errors == []
     assert report.contacts.created == 0  # SignalScout never sends people
-    record = hs.records["companies"][report.companies.ids["ledgerline.io"]]
+    record = hs.records["companies"][report.companies.ids["ledgerline.example"]]
     assert record["signal_tier"] == "A" and record["signal_score"] == "79"
     assert record["signal_crm"] == "salesforce" and record["account_segment"] == "mid_market"
     assert record["signal_reasons"].startswith("120 people, inside the 50-500 band")
@@ -54,7 +54,7 @@ def test_undeclared_columns_are_never_sent() -> None:
     hs = configured(quarry)  # Quarry's portal has no signal_* properties
     report = load(hs, HANDOFF, declared(quarry))
     assert report.companies.created == 3 and report.companies.errors == []
-    record = hs.records["companies"][report.companies.ids["ledgerline.io"]]
+    record = hs.records["companies"][report.companies.ids["ledgerline.example"]]
     assert not any(k.startswith("signal_") for k in record)
 
 

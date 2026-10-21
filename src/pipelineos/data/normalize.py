@@ -62,11 +62,18 @@ def is_freemail(domain: str) -> bool:
 
 
 def registrable_domain(raw: str) -> str | None:
-    """``https://www.acme.io/pricing`` -> ``acme.io``; ``None`` for anything without a suffix."""
+    """``https://www.acme.io/pricing`` -> ``acme.io``; ``None`` for anything without a suffix.
+
+    ``.example`` (reserved by RFC 2606, never a real business) counts as a suffix, so demo data
+    and fixtures can use ``ledgerline.example`` instead of a domain someone may own.
+    """
     value = raw.strip().lower()
     if not value:
         return None
-    domain = _EXTRACT(value).top_domain_under_public_suffix
+    extracted = _EXTRACT(value)
+    domain = extracted.top_domain_under_public_suffix
+    if not domain and extracted.domain == "example" and extracted.subdomain:
+        domain = f"{extracted.subdomain.rsplit('.', 1)[-1]}.example"
     return domain or None
 
 

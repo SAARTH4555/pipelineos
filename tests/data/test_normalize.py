@@ -56,6 +56,8 @@ def test_email_key(email: str, key: str) -> None:
         ("", None),
         ("   ", None),
         ("localhost", None),
+        ("https://www.ledgerline.example/careers", "ledgerline.example"),
+        ("example", None),
     ],
 )
 def test_registrable_domain(raw: str, domain: str | None) -> None:
