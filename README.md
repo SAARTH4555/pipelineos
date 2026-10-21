@@ -108,12 +108,12 @@ Plan: 42 to create, 0 to update, 0 need manual action, 1 unmanaged (left alone),
 `pipelineos route-demos --fake` (keyword rules):
 
 ```
-maya.chen@ledgerline.io      ae_enterprise       flaky_tests      flaky tests; 1,400 people (CRM); asked for enterprise requirements
-omar@tinyforge.dev           self_serve_nurture  slow_ci          slow ci; 8 people (CRM); no enterprise asks
-priya.n@carelink.health      ae_enterprise       compliance       compliance; 220 people (CRM); asked for enterprise requirements
-lee@gmail.com                self_serve_nurture  other            No testing problem described; size unknown
-sofia.r@shipyard.co          sdr_mid_market      test_visibility  test visibility; 90 people (CRM); no enterprise asks
-dan@brightcart.com           self_serve_nurture  other            No testing problem described; 30 people (form)
+maya.chen@ledgerline.example ae_enterprise       flaky_tests      flaky tests; 1,400 people (CRM); asked for enterprise requirements
+omar@tinyforge.example       self_serve_nurture  slow_ci          slow ci; 8 people (CRM); no enterprise asks
+priya.n@carelink.example     ae_enterprise       compliance       compliance; 220 people (CRM); asked for enterprise requirements
+lee@example.com              self_serve_nurture  other            No testing problem described; size unknown
+sofia.r@shipyard.example     sdr_mid_market      test_visibility  test visibility; 90 people (CRM); no enterprise asks
+dan@brightcart.example       self_serve_nurture  other            No testing problem described; 30 people (form)
 ```
 
 Read that as: every lead gets a queue and a reason a rep can check. The last row is the keyword
