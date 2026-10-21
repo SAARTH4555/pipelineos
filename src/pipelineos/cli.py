@@ -12,6 +12,7 @@ from typing import Annotated
 import typer
 
 from pipelineos import __version__
+from pipelineos.data.generate import GenConfig, generate, write_dataset, write_summary
 from pipelineos.guard import GuardError, WriteMode, authorize_writes
 from pipelineos.hubspot import FakeHubSpot, HttpHubSpot, HubSpotClient, HubSpotError
 from pipelineos.portal.apply import apply_plan
@@ -178,3 +179,23 @@ def apply(
     except HubSpotError as exc:
         typer.echo(f"error: {exc}", err=True)
         raise typer.Exit(EXIT_ERROR) from exc
+
+
+@app.command(name="generate")
+def generate_cmd(
+    n: Annotated[int, typer.Option(help="Distinct real people to generate.")] = 3000,
+    dirty: Annotated[float, typer.Option(help="Share of records that get a defect.")] = 0.2,
+    seed: Annotated[int, typer.Option(help="Random seed; same seed, same files.")] = 7,
+    out: Annotated[Path, typer.Option(help="Output directory.")] = Path("data/raw"),
+    report: Annotated[Path | None, typer.Option(help="Also write the summary JSON here.")] = None,
+) -> None:
+    """Generate a messy CRM import (contacts + companies) with separate ground truth."""
+    data, summary = generate(GenConfig(n=n, dirty_fraction=dirty, seed=seed))
+    write_dataset(data, out)
+    write_summary(summary, out / "summary.json")
+    if report is not None:
+        write_summary(summary, report)
+    typer.echo(
+        f"wrote {summary['contact_rows']} contact rows ({summary['duplicate_rows']} duplicates) "
+        f"and {summary['company_rows']} company rows to {out}"
+    )

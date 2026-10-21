@@ -13,7 +13,7 @@ htmlcov/
 .DS_Store
 
 # generated working data (regenerate with `pipelineos generate`)
-data/
+/data/
 
 # local planning workspace
 .claude-protocol/

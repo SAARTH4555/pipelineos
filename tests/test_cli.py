@@ -156,3 +156,15 @@ def test_apply_reports_partial_failure(monkeypatch: pytest.MonkeyPatch) -> None:
     result = runner.invoke(app, ["apply", "--fake", "--yes", "--spec", str(SPEC)])
     assert result.exit_code == 1
     assert "then failed on schema workspace" in result.stdout
+
+
+def test_generate_writes_files_and_report(tmp_path: Path) -> None:
+    out, report = tmp_path / "raw", tmp_path / "results" / "generated.json"
+    result = runner.invoke(
+        app, ["generate", "--n", "200", "--seed", "4", "--out", str(out), "--report", str(report)]
+    )
+    assert result.exit_code == 0, result.output
+    assert "contact rows" in result.stdout
+    for name in ("contacts.csv", "companies.csv", "truth_contacts.csv", "summary.json"):
+        assert (out / name).exists()
+    assert report.read_text() == (out / "summary.json").read_text()
