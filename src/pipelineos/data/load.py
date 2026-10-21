@@ -55,7 +55,19 @@ def _non_empty(props: dict[str, str]) -> dict[str, str]:
     return {k: v for k, v in props.items() if v}
 
 
-def company_inputs(rows: list[dict[str, str]]) -> list[UpsertInput]:
+COMPANY_BASE_FIELDS = frozenset({"company_key", "name", "domain", "numberofemployees"})
+
+
+def company_inputs(
+    rows: list[dict[str, str]], extra_properties: frozenset[str] = frozenset()
+) -> list[UpsertInput]:
+    """Golden company rows to upserts.
+
+    ``extra_properties`` are company properties the portal spec declares: any CSV column with one
+    of those names is passed through (an upstream tool's ``signal_*`` columns, for instance).
+    Columns the spec does not declare are never sent, so an unknown column cannot fail a load.
+    """
+    passthrough = extra_properties - COMPANY_BASE_FIELDS
     return coalesce(
         [
             UpsertInput(
@@ -67,6 +79,7 @@ def company_inputs(rows: list[dict[str, str]]) -> list[UpsertInput]:
                         "numberofemployees": row.get("numberofemployees", ""),
                         "account_segment": account_segment(row.get("numberofemployees", "")),
                     }
+                    | {name: row.get(name, "") for name in sorted(passthrough) if name in row}
                 ),
             )
             for row in rows
@@ -173,10 +186,16 @@ def preview(clean_dir: Path) -> dict[str, int]:
     }
 
 
-def load(client: HubSpotClient, clean_dir: Path) -> LoadReport:
+def load(
+    client: HubSpotClient, clean_dir: Path, company_properties: frozenset[str] = frozenset()
+) -> LoadReport:
+    """``company_properties`` = the company properties the portal spec declares (see
+    ``company_inputs``); CSV columns with those names are loaded too."""
     company_rows = read_csv(clean_dir / "companies.csv")
     contact_rows = read_csv(clean_dir / "contacts.csv")
-    companies = upsert_all(client, "companies", "company_key", company_inputs(company_rows))
+    companies = upsert_all(
+        client, "companies", "company_key", company_inputs(company_rows, company_properties)
+    )
     contacts = upsert_all(client, "contacts", "email", contact_inputs(contact_rows))
 
     pairs: list[AssociationInput] = []

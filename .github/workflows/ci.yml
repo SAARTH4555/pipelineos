@@ -26,6 +26,8 @@ jobs:
         run: |
           uv run pipelineos validate
           uv run pipelineos dictionary --check
+          uv run pipelineos validate --spec portal/gtm-consultancy.yaml
+          uv run pipelineos dictionary --spec portal/gtm-consultancy.yaml --out docs/field-dictionary-gtm-consultancy.md --check
       - name: README results match committed results/*.json
         run: uv run python scripts/render_readme.py --check
 

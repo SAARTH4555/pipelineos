@@ -1,0 +1,187 @@
+# PipelineOS portal spec: a RevOps / GTM-ops consultancy's own CRM.
+#
+# The second client for the same tool. The accounts come from SignalScout, which finds startups
+# that need GTM-ops help now and hands Tier-A accounts over in PipelineOS's load format with
+# signal_* columns. This spec declares those columns as company properties, so
+# `pipelineos load --spec portal/gtm-consultancy.yaml` writes them too.
+
+version: 1
+client: A GTM-ops consultancy (generic)
+summary: >
+  A consultancy that sets up GTM systems for Series A-C B2B startups. Its pipeline is built from
+  public signals: a startup hiring its first RevOps or CRM admin role, often right after a raise.
+  Reps need to see why each account is on their list, and to know which CRM the prospect runs
+  before the first call.
+
+objects:
+  contacts:
+    groups:
+      - name: pipelineos_prospect
+        label: Prospecting
+        display_order: 0
+    properties:
+      - name: signup_source
+        label: Source
+        type: enumeration
+        field_type: select
+        group: pipelineos_prospect
+        options: [signal_outbound, referral, inbound, event, partner]
+        description: How the contact entered the CRM.
+      - name: persona
+        label: Persona
+        type: enumeration
+        field_type: select
+        group: pipelineos_prospect
+        options: [revops_leader, sales_leader, founder_exec, operator, other]
+        description: Buying role at the prospect.
+
+  companies:
+    groups:
+      - name: pipelineos_signals
+        label: Account signals
+        display_order: 0
+    properties:
+      - name: company_key
+        label: Company key
+        type: string
+        field_type: text
+        group: pipelineos_signals
+        unique: true
+        description: Normalized registrable domain (acme.io). Upsert key, shared with SignalScout.
+        validation:
+          - rule: DOMAIN
+          - rule: FORMAT
+            arguments: [LOWER]
+      - name: account_segment
+        label: Account segment
+        type: enumeration
+        field_type: select
+        group: pipelineos_signals
+        options: [smb, mid_market, enterprise]
+        description: "From employee count: under 50 smb, 50-499 mid_market, 500+ enterprise."
+      - name: signal_tier
+        label: Signal tier
+        type: enumeration
+        field_type: select
+        group: pipelineos_signals
+        options: [A, B, C]
+        description: SignalScout's tier. A = an open GTM-ops role plus enough fit and intent to call now.
+      - name: signal_score
+        label: Signal score
+        type: number
+        field_type: number
+        group: pipelineos_signals
+        description: SignalScout's 0-100 score (fit + intent, decayed with signal age).
+        validation:
+          - rule: MIN_NUMBER
+            arguments: ["0"]
+          - rule: MAX_NUMBER
+            arguments: ["100"]
+      - name: signal_reasons
+        label: Why now
+        type: string
+        field_type: textarea
+        group: pipelineos_signals
+        description: Every scoring rule that fired, in plain sentences. What a rep reads first.
+      - name: signal_best_role
+        label: GTM-ops opening
+        type: string
+        field_type: text
+        group: pipelineos_signals
+        description: The open role that scored highest, e.g. "Revenue Operations Manager".
+      - name: signal_crm
+        label: CRM in use
+        type: enumeration
+        field_type: select
+        group: pipelineos_signals
+        options: [salesforce, hubspot, both]
+        description: From the prospect's job postings first, its website scripts second.
+      - name: signal_funding_date
+        label: Last raise
+        type: date
+        field_type: date
+        group: pipelineos_signals
+        description: Date of first sale on the latest SEC Form D.
+      - name: signal_funding_amount
+        label: Last raise (USD)
+        type: number
+        field_type: number
+        group: pipelineos_signals
+        description: Amount sold on the latest SEC Form D.
+        validation:
+          - rule: MIN_NUMBER
+            arguments: ["0"]
+      - name: signal_checked_at
+        label: Signals checked
+        type: date
+        field_type: date
+        group: pipelineos_signals
+        description: When SignalScout last scored the account. Stale after 30 days.
+
+  deals:
+    groups:
+      - name: pipelineos_engagement
+        label: Engagement
+        display_order: 0
+    properties:
+      - name: engagement_type
+        label: Engagement type
+        type: enumeration
+        field_type: select
+        group: pipelineos_engagement
+        options: [crm_setup, crm_migration, data_cleanup, routing_automation, reporting, retainer]
+        description: What the client is buying.
+      - name: entry_signal
+        label: Entry signal
+        type: enumeration
+        field_type: select
+        group: pipelineos_engagement
+        options: [gtm_ops_hire, funding, new_sales_leader, inbound, referral]
+        description: The signal that opened the conversation. Drives win-rate-by-signal reporting.
+
+pipelines:
+  deals:
+    - label: Engagements
+      display_order: 1
+      stages:
+        - {id: en_discovery, label: Discovery call, probability: 0.1, required_properties: [entry_signal]}
+        - {id: en_audit, label: Systems audit, probability: 0.3, required_properties: [engagement_type]}
+        - {id: en_proposal, label: Proposal, probability: 0.6, required_properties: [amount, closedate]}
+        - {id: en_closed_won, label: Closed won, probability: 1.0, closed: true, required_properties: [amount]}
+        - {id: en_closed_lost, label: Closed lost, probability: 0.0, closed: true}
+
+association_labels:
+  - {from: contacts, to: companies, name: economic_buyer, label: Economic buyer, inverse_label: Has economic buyer}
+  - {from: contacts, to: companies, name: revops_owner, label: RevOps owner, inverse_label: Has RevOps owner}
+
+lifecycle:
+  - stage: Lead
+    definition: A contact at a scored account.
+    entry: Created by Clay or by hand for a Tier-A or Tier-B account.
+    owner: SDR
+  - stage: Sales qualified lead
+    definition: Confirmed a GTM-ops problem on a call.
+    entry: Discovery call held and the problem written down.
+    owner: Account executive
+  - stage: Opportunity
+    definition: An Engagements deal exists.
+    entry: Deal created at Discovery call.
+    owner: Account executive
+  - stage: Customer
+    definition: A signed engagement.
+    entry: Deal moves to Closed won.
+    owner: Engagement lead
+
+manual:
+  - area: Pipelines
+    step: Set the required properties for each Engagements stage, as listed per stage in this spec.
+    why: HubSpot has no API for stage-required properties.
+  - area: Workflows
+    step: Build a company workflow that, when signal_tier becomes A, assigns an owner by round robin and creates a call task due in 2 days with signal_reasons in its notes.
+    why: The signal is only worth something while it is fresh; the reasons give the rep the opening line.
+  - area: Workflows
+    step: Build a company workflow that flags accounts whose signal_checked_at is older than 30 days for a re-run of SignalScout.
+    why: Hiring and funding signals decay; stale tiers mislead reps.
+  - area: Reporting
+    step: "Build the Signals dashboard: accounts by tier, Tier-A accounts contacted within 2 days, win rate by entry_signal, pipeline by engagement_type."
+    why: Shows which signals actually turn into revenue, so the scoring weights can be tuned.
