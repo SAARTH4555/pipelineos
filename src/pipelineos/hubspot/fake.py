@@ -47,6 +47,7 @@ _LIFECYCLE = ["subscriber", "lead", "marketingqualifiedlead", "salesqualifiedlea
 _LIFECYCLE += ["opportunity", "customer", "evangelist", "other"]
 _LEAD_STATUS = ["NEW", "OPEN", "IN_PROGRESS", "OPEN_DEAL", "UNQUALIFIED"]
 _LEAD_STATUS += ["ATTEMPTED_TO_CONTACT", "CONNECTED", "BAD_TIMING"]
+_INDUSTRY = ["COMPUTER_SOFTWARE", "FINANCIAL_SERVICES", "HOSPITAL_HEALTH_CARE", "INTERNET"]
 
 
 def _builtin(
@@ -81,7 +82,8 @@ def _seed_properties() -> dict[str, dict[str, JSON]]:
     companies = [
         _builtin("name", co, "string", "text"),
         _builtin("domain", co, "string", "text"),
-        _builtin("industry", co, "string", "text"),
+        # HubSpot's industry is a fixed picklist (COMPUTER_SOFTWARE, ...), not free text.
+        _builtin("industry", co, "enumeration", "select", _INDUSTRY),
         _builtin("numberofemployees", co, "number", "number"),
         _builtin("lifecyclestage", co, "enumeration", "radio", _LIFECYCLE),
     ]

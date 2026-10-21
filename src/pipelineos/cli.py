@@ -14,6 +14,7 @@ import typer
 from pipelineos import __version__
 from pipelineos.data.clean import clean, write_clean
 from pipelineos.data.generate import GenConfig, generate, write_dataset, write_summary
+from pipelineos.data.load import load, preview
 from pipelineos.guard import GuardError, WriteMode, authorize_writes
 from pipelineos.hubspot import FakeHubSpot, HttpHubSpot, HubSpotClient, HubSpotError
 from pipelineos.portal.apply import apply_plan
@@ -110,10 +111,17 @@ def _load(spec_path: Path) -> PortalSpec:
         raise typer.Exit(EXIT_ERROR) from exc
 
 
-def _client(fake: bool) -> tuple[HubSpotClient, int | None]:
-    """The client to use and the portal id writes are allowed against."""
+def _client(fake: bool, configure: PortalSpec | None = None) -> tuple[HubSpotClient, int | None]:
+    """The client to use and the portal id writes are allowed against.
+
+    With ``configure``, a fake portal is first set up from the spec, standing in for a real
+    portal that has already been through ``pipelineos apply``.
+    """
     if fake:
         hs = FakeHubSpot()
+        if configure is not None:
+            live = read_live(hs, configure)
+            apply_plan(hs, build_plan(configure, live), live)
         return hs, hs.portal  # in-memory, so writing to it is always safe
     settings = get_settings()
     try:
@@ -228,3 +236,48 @@ def clean_cmd(
     if "accuracy_contacts" in r:
         pw = r["accuracy_contacts"]["pairwise"]  # type: ignore[index]
         typer.echo(f"vs ground truth: precision {pw['precision']}, recall {pw['recall']}")
+
+
+@app.command(name="load")
+def load_cmd(
+    clean_dir: Annotated[Path, typer.Argument(help="Output of `pipelineos clean`.")] = (
+        Path("data/clean")
+    ),
+    spec: SpecOption = DEFAULT_SPEC,
+    fake: FakeOption = False,
+    yes: YesOption = False,
+    report: Annotated[Path | None, typer.Option(help="Write the load report JSON here.")] = None,
+) -> None:
+    """Upsert golden companies and contacts, then associate them. Previews unless --yes."""
+    portal = _load(spec)
+    client, allowed = _client(fake, configure=portal)
+    planned = preview(clean_dir)
+    typer.echo(
+        f"Load {planned['companies']} companies and {planned['contacts']} contacts in "
+        f"{planned['upsert_calls']} upsert calls, then up to {planned['associations']} "
+        "contact-company associations."
+    )
+    try:
+        mode = authorize_writes(client, yes=yes, allowed_portal=allowed)
+        if mode is WriteMode.PREVIEW:
+            typer.echo("Preview only. Re-run with --yes to write.")
+            return
+        result = load(client, clean_dir)
+    except (GuardError, HubSpotError) as exc:
+        typer.echo(f"error: {exc}", err=True)
+        raise typer.Exit(EXIT_ERROR) from exc
+    summary = result.summary()
+    if report is not None:
+        write_summary(summary, report)
+    for name, part in (("companies", result.companies), ("contacts", result.contacts)):
+        typer.echo(
+            f"{name}: {part.created} created, {part.updated} updated, {len(part.errors)} failed "
+            f"({part.batches} batches)"
+        )
+        for error in part.errors[:5]:
+            typer.echo(f"  ! {error.key}: {error.message}")
+    typer.echo(
+        f"associations: {result.associations} created, {result.skipped_associations} skipped"
+    )
+    if result.companies.errors or result.contacts.errors:
+        raise typer.Exit(EXIT_ERROR)
