@@ -1,0 +1,355 @@
+# PipelineOS portal spec: the HubSpot build for Quarry, a fictional Series A dev-tools company.
+#
+# This file is the source of truth. `pipelineos plan` diffs it against a live portal and
+# `pipelineos apply --yes` creates or updates what differs. Nothing here is ever deleted
+# automatically. Settings HubSpot only exposes in its UI are listed under `manual:` and in each
+# stage's `required_properties`, and `pipelineos plan` prints them as a checklist.
+
+version: 1
+client: Quarry (fictional)
+summary: >
+  Series A CI test-analytics platform, ~40 people. Engineers sign up free and invite their team;
+  Team plan is self-serve; Enterprise (SSO, audit log, on-prem runners) is sold by a 3-person
+  sales team. The build has to tell sales which free workspaces are worth a call, and route
+  demo requests without a human reading every form.
+
+objects:
+  contacts:
+    groups:
+      - name: pipelineos_lead
+        label: Lead management
+        display_order: 0
+    properties:
+      - name: product_user_id
+        label: Product user ID
+        type: string
+        field_type: text
+        group: pipelineos_lead
+        unique: true
+        description: The user's id in Quarry's product database. Upsert key for product-sourced contacts.
+        validation:
+          - rule: REGEX
+            arguments: ["^usr_[a-z0-9]{8,}$", "Product user IDs look like usr_ followed by 8+ lowercase letters or digits"]
+      - name: signup_source
+        label: Signup source
+        type: enumeration
+        field_type: select
+        group: pipelineos_lead
+        options: [organic, github_marketplace, paid_search, referral, event, outbound]
+        description: First-touch channel recorded by the product at signup.
+      - name: demo_request_text
+        label: Demo request (free text)
+        type: string
+        field_type: textarea
+        group: pipelineos_lead
+        description: Answer to "What are you hoping Quarry will fix?" on the demo form. Input to the classifier.
+      - name: demo_use_case
+        label: Demo use case
+        type: enumeration
+        field_type: select
+        group: pipelineos_lead
+        options: [flaky_tests, slow_ci, test_visibility, compliance, other]
+        description: Set by the demo-form classifier from demo_request_text.
+      - name: segment
+        label: Segment
+        type: enumeration
+        field_type: select
+        group: pipelineos_lead
+        options: [self_serve, mid_market, enterprise]
+        description: Sales segment used for routing. Derived from company size and the form answer.
+      - name: routing_queue
+        label: Routing queue
+        type: enumeration
+        field_type: select
+        group: pipelineos_lead
+        options: [ae_enterprise, sdr_mid_market, self_serve_nurture]
+        description: Queue a HubSpot rotation workflow assigns an owner from. Written by PipelineOS.
+      - name: routing_reason
+        label: Routing reason
+        type: string
+        field_type: text
+        group: pipelineos_lead
+        description: One line explaining why the contact went to its queue, so reps can trust it.
+      - name: persona
+        label: Persona
+        type: enumeration
+        field_type: select
+        group: pipelineos_lead
+        options: [engineering_leader, individual_engineer, platform_devops, executive, other]
+        description: Buying role, from job title.
+
+  companies:
+    groups:
+      - name: pipelineos_account
+        label: Account and PQL
+        display_order: 0
+    properties:
+      - name: company_key
+        label: Company key
+        type: string
+        field_type: text
+        group: pipelineos_account
+        unique: true
+        description: >
+          Normalized registrable domain (acme.io). Upsert key for companies, because HubSpot's
+          own domain property is not unique and cannot be used to upsert.
+        validation:
+          - rule: DOMAIN
+          - rule: FORMAT
+            arguments: [LOWER]
+      - name: account_segment
+        label: Account segment
+        type: enumeration
+        field_type: select
+        group: pipelineos_account
+        options: [smb, mid_market, enterprise]
+        description: "From employee count: under 50 smb, 50-499 mid_market, 500+ enterprise."
+      - name: product_plan
+        label: Product plan
+        type: enumeration
+        field_type: select
+        group: pipelineos_account
+        options: [free, team, enterprise_trial, enterprise]
+        description: Highest plan across the company's workspaces.
+      - name: workspace_count
+        label: Workspaces
+        type: number
+        field_type: number
+        group: pipelineos_account
+        description: Number of product workspaces linked to the company.
+      - name: is_pql
+        label: Product-qualified
+        type: bool
+        field_type: booleancheckbox
+        group: pipelineos_account
+        description: True when any of the company's workspaces is product-qualified.
+      - name: pql_score
+        label: PQL score
+        type: number
+        field_type: number
+        group: pipelineos_account
+        description: Highest workspace PQL score (0-100).
+        validation:
+          - rule: MIN_NUMBER
+            arguments: ["0"]
+          - rule: MAX_NUMBER
+            arguments: ["100"]
+      - name: pql_reasons
+        label: PQL reasons
+        type: string
+        field_type: textarea
+        group: pipelineos_account
+        description: The scoring rules that fired for the top workspace, in plain words.
+      - name: pql_since
+        label: PQL since
+        type: date
+        field_type: date
+        group: pipelineos_account
+        description: Date the company first became product-qualified.
+
+  deals:
+    groups:
+      - name: pipelineos_deal
+        label: Deal qualification
+        display_order: 0
+    properties:
+      - name: deal_source
+        label: Deal source
+        type: enumeration
+        field_type: select
+        group: pipelineos_deal
+        options: [pql, inbound_demo, outbound, partner, expansion]
+        description: How the opportunity started. Drives source-attribution reporting.
+      - name: primary_use_case
+        label: Primary use case
+        type: enumeration
+        field_type: select
+        group: pipelineos_deal
+        options: [flaky_tests, slow_ci, test_visibility, compliance, other]
+        description: The problem the buyer is paying to solve.
+      - name: seats_committed
+        label: Seats committed
+        type: number
+        field_type: number
+        group: pipelineos_deal
+        description: Seats in the proposal.
+        validation:
+          - rule: MIN_NUMBER
+            arguments: ["1"]
+      - name: arr
+        label: ARR (USD)
+        type: number
+        field_type: number
+        group: pipelineos_deal
+        description: Annual recurring revenue of the deal, in USD.
+        validation:
+          - rule: MIN_NUMBER
+            arguments: ["0"]
+      - name: security_review_status
+        label: Security review
+        type: enumeration
+        field_type: select
+        group: pipelineos_deal
+        options: [not_started, in_progress, approved]
+        description: Enterprise buyers run a vendor security review before signing.
+      - name: competitor
+        label: Main alternative
+        type: enumeration
+        field_type: select
+        group: pipelineos_deal
+        options: [none, in_house, other_vendor]
+        description: What the buyer would do instead of Quarry.
+      - name: close_reason
+        label: Close reason
+        type: enumeration
+        field_type: select
+        group: pipelineos_deal
+        options: [won_product_fit, won_price, lost_price, lost_competitor, lost_no_decision, lost_timing]
+        description: Required on both closed stages, so win/loss analysis has data.
+      - name: next_step
+        label: Next step
+        type: string
+        field_type: text
+        group: pipelineos_deal
+        description: The agreed next action and its date.
+
+custom_objects:
+  - name: workspace
+    singular: Workspace
+    plural: Workspaces
+    description: A team's account in Quarry's product. The unit that becomes product-qualified.
+    primary_display: workspace_name
+    secondary_display: [plan, seats]
+    required: [workspace_id, workspace_name]
+    searchable: [workspace_id, workspace_name]
+    associated: [contacts, companies]
+    properties:
+      - name: workspace_id
+        label: Workspace ID
+        type: string
+        field_type: text
+        unique: true
+        description: The workspace's id in the product. Upsert key.
+        validation:
+          - rule: REGEX
+            arguments: ["^ws_[a-z0-9]{6,}$", "Workspace IDs look like ws_ followed by 6+ lowercase letters or digits"]
+      - name: workspace_name
+        label: Workspace name
+        type: string
+        field_type: text
+        description: Name the team gave the workspace.
+      - name: plan
+        label: Plan
+        type: enumeration
+        field_type: select
+        options: [free, team, enterprise_trial, enterprise]
+        description: Current billing plan.
+      - name: seats
+        label: Seats
+        type: number
+        field_type: number
+        description: Members invited to the workspace.
+      - name: active_users_14d
+        label: Active users (14 days)
+        type: number
+        field_type: number
+        description: Members with at least one session in the last 14 days.
+      - name: key_actions_14d
+        label: Key actions (14 days)
+        type: number
+        field_type: number
+        description: CI pipelines connected, flaky tests quarantined and API keys created in the last 14 days.
+      - name: signup_date
+        label: Signup date
+        type: date
+        field_type: date
+        description: Date the workspace was created.
+      - name: last_active_date
+        label: Last active
+        type: date
+        field_type: date
+        description: Most recent session by any member.
+      - name: pql_score
+        label: PQL score
+        type: number
+        field_type: number
+        description: 0-100, from the rules in portal/pql.yaml.
+      - name: is_pql
+        label: Product-qualified
+        type: bool
+        field_type: booleancheckbox
+        description: pql_score at or above the threshold in portal/pql.yaml.
+      - name: pql_reasons
+        label: PQL reasons
+        type: string
+        field_type: textarea
+        description: The scoring rules that fired, in plain words.
+
+pipelines:
+  deals:
+    - label: New Business
+      display_order: 1
+      stages:
+        - {id: nb_discovery, label: Discovery, probability: 0.1, required_properties: [deal_source, primary_use_case]}
+        - {id: nb_technical_eval, label: Technical evaluation, probability: 0.3, required_properties: [seats_committed]}
+        - {id: nb_security_review, label: Security review, probability: 0.5, required_properties: [security_review_status]}
+        - {id: nb_proposal, label: Proposal, probability: 0.7, required_properties: [arr, amount]}
+        - {id: nb_negotiation, label: Negotiation, probability: 0.85, required_properties: [closedate, next_step]}
+        - {id: nb_closed_won, label: Closed won, probability: 1.0, closed: true, required_properties: [close_reason, arr]}
+        - {id: nb_closed_lost, label: Closed lost, probability: 0.0, closed: true, required_properties: [close_reason, competitor]}
+    - label: Expansion
+      display_order: 2
+      stages:
+        - {id: ex_identified, label: Identified, probability: 0.2, required_properties: [deal_source]}
+        - {id: ex_scoping, label: Scoping, probability: 0.5, required_properties: [seats_committed]}
+        - {id: ex_proposal, label: Proposal, probability: 0.75, required_properties: [arr, amount]}
+        - {id: ex_closed_won, label: Closed won, probability: 1.0, closed: true, required_properties: [close_reason, arr]}
+        - {id: ex_closed_lost, label: Closed lost, probability: 0.0, closed: true, required_properties: [close_reason]}
+
+association_labels:
+  - {from: workspace, to: contacts, name: workspace_admin, label: Admin, inverse_label: Admin of}
+  - {from: workspace, to: contacts, name: workspace_member, label: Member, inverse_label: Member of}
+  - {from: contacts, to: companies, name: economic_buyer, label: Economic buyer, inverse_label: Has economic buyer}
+  - {from: contacts, to: companies, name: champion, label: Champion, inverse_label: Has champion}
+
+lifecycle:
+  - stage: Lead
+    definition: Any contact we can email.
+    entry: Product signup, form fill or import.
+    owner: Marketing
+  - stage: Marketing qualified lead
+    definition: Asked to talk to us, or engaged enough that sales should look.
+    entry: Demo request, or a workspace becomes product-qualified (is_pql on its company).
+    owner: SDR
+  - stage: Sales qualified lead
+    definition: SDR confirmed fit and a real problem on a call.
+    entry: SDR sets lead status Connected and books a discovery call.
+    owner: SDR
+  - stage: Opportunity
+    definition: A deal exists in New Business or Expansion.
+    entry: Deal created (Discovery stage).
+    owner: AE
+  - stage: Customer
+    definition: Paying for Team or Enterprise.
+    entry: Deal moves to Closed won, or a self-serve Team subscription starts.
+    owner: CSM
+
+manual:
+  - area: Pipelines
+    step: Set the required properties for each deal stage (Settings > Objects > Deals > Pipelines > Edit stage properties), as listed per stage in this spec.
+    why: HubSpot has no API for stage-required properties.
+  - area: Permissions
+    step: "Create permission sets SDR, AE, CSM and RevOps admin. Only RevOps admin can edit lifecyclestage, arr, is_pql, pql_score and company_key."
+    why: Permission sets are not configurable through the API. Field-level edit locks keep PQL and revenue fields trustworthy.
+  - area: Teams
+    step: Create teams SDR mid-market, AE enterprise and Customer success, and add users.
+    why: Rotation workflows assign owners by team.
+  - area: Workflows
+    step: Build a contact workflow per routing_queue value that rotates the owner within the matching team and creates a follow-up task due in 24 hours.
+    why: The workflows API is beta and replaces the whole workflow on every update, so routing logic lives in PipelineOS and HubSpot only rotates owners.
+  - area: Workflows
+    step: Build a company workflow that, when is_pql becomes true, sets lifecycle stage to Marketing qualified lead, sets lead status Open on associated contacts and notifies the owner.
+    why: PQL is a property, not a lifecycle stage, so HubSpot can act on it while staying reversible.
+  - area: Reporting
+    step: "Build the Revenue dashboard: lifecycle funnel conversion, pipeline by stage vs target, days in stage, win rate by deal_source, PQL-to-opportunity conversion."
+    why: Dashboards and reports cannot be created through the API.
