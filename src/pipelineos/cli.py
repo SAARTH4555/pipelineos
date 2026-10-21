@@ -15,11 +15,14 @@ from typing import Annotated
 import typer
 
 from pipelineos import __version__
+from pipelineos.ai.classify import Classifier, KeywordClassifier, OllamaClassifier
+from pipelineos.ai.route import route
 from pipelineos.data.clean import clean, write_clean
 from pipelineos.data.generate import GenConfig, generate, write_dataset, write_summary
-from pipelineos.data.load import load, preview
+from pipelineos.data.load import batched, load, preview
 from pipelineos.guard import GuardError, WriteMode, authorize_writes
 from pipelineos.hubspot import FakeHubSpot, HttpHubSpot, HubSpotClient, HubSpotError
+from pipelineos.hubspot.client import MAX_UPSERT_BATCH, UpsertInput
 from pipelineos.portal.apply import apply_plan
 from pipelineos.portal.live import read_live
 from pipelineos.portal.plan import build_plan
@@ -469,4 +472,87 @@ def sync_cmd(
         typer.echo(f"error: {exc}", err=True)
         raise typer.Exit(EXIT_ERROR) from exc
     if result.companies.errors or result.contacts.errors or result.workspaces.errors:
+        raise typer.Exit(EXIT_ERROR)
+
+
+OllamaFlag = Annotated[
+    bool, typer.Option("--ollama", help="Classify with local Ollama (PIPELINEOS_OLLAMA_URL).")
+]
+
+
+def _classifier(use_ollama: bool) -> Classifier:
+    if not use_ollama:
+        return KeywordClassifier()
+    settings = get_settings()
+    url = settings.ollama_url or "http://localhost:11434"
+    return OllamaClassifier(url, settings.ollama_model)
+
+
+@app.command(name="classify")
+def classify_cmd(
+    text: Annotated[str, typer.Argument(help="A demo-form answer.")],
+    employees: Annotated[int | None, typer.Option(help="Company size from the CRM.")] = None,
+    use_ollama: OllamaFlag = False,
+) -> None:
+    """Classify one demo-form answer and show where it would be routed."""
+    c = _classifier(use_ollama).classify(text)
+    r = route(c, employees)
+    typer.echo(f"use case:   {c.use_case}  (by {c.source})")
+    typer.echo(f"enterprise: {'yes' if c.enterprise_signals else 'no'}")
+    typer.echo(f"team size:  {c.team_size if c.team_size is not None else 'not stated'}")
+    typer.echo(f"route:      {r.queue}  [{r.segment}]  {r.reason}")
+
+
+@app.command(name="route-demos")
+def route_demos_cmd(
+    requests: Annotated[
+        Path, typer.Argument(help="CSV: email, company_key, employees, demo_request_text")
+    ] = Path("examples/demo_requests.csv"),
+    clean_dir: Annotated[Path, typer.Option(help="Cleaned CRM data, for company size.")] = (
+        Path("data/clean")
+    ),
+    use_ollama: OllamaFlag = False,
+    spec: SpecOption = DEFAULT_SPEC,
+    fake: FakeOption = False,
+    yes: YesOption = False,
+) -> None:
+    """Classify demo requests, route them, and write the routing onto the contacts."""
+    portal = _load(spec)
+    client, allowed = _client(fake, configure=portal)  # fail fast, before any model calls
+    classifier = _classifier(use_ollama)
+    sizes = company_sizes(clean_dir / "companies.csv")
+    inputs: list[UpsertInput] = []
+    for row in read_csv_rows(requests):
+        typed = row.get("employees", "")
+        employees = int(typed) if typed.isdigit() else sizes.get(row.get("company_key", ""))
+        c = classifier.classify(row["demo_request_text"])
+        r = route(c, employees)
+        typer.echo(f"{row['email']:<28} {r.queue:<19} {c.use_case:<16} {r.reason}")
+        inputs.append(
+            UpsertInput(
+                row["email"],
+                {
+                    "demo_request_text": row["demo_request_text"],
+                    "demo_use_case": c.use_case,
+                    "segment": r.segment,
+                    "routing_queue": r.queue,
+                    "routing_reason": r.reason,
+                },
+            )
+        )
+    try:
+        if authorize_writes(client, yes=yes, allowed_portal=allowed) is WriteMode.PREVIEW:
+            typer.echo(f"\nPreview only. Re-run with --yes to write {len(inputs)} contacts.")
+            return
+        failed = 0
+        for batch in batched(inputs, MAX_UPSERT_BATCH):
+            result = client.batch_upsert("contacts", "email", batch)
+            failed += len(result.errors)
+            for error in result.errors:
+                typer.echo(f"  ! {error.key}: {error.message}")
+    except (GuardError, HubSpotError) as exc:
+        typer.echo(f"error: {exc}", err=True)
+        raise typer.Exit(EXIT_ERROR) from exc
+    typer.echo(f"\nWrote routing for {len(inputs) - failed} of {len(inputs)} contacts.")
+    if failed:
         raise typer.Exit(EXIT_ERROR)

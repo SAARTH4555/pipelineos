@@ -482,6 +482,9 @@ class FakeHubSpot:
             key = item.key.lower() if id_property == "email" else item.key
             props = {**item.properties, id_property: key}
             error = self._validate_values(t, props)
+            bad_email = t == "contacts" and not _EMAIL_RE.match(props.get("email", "x@y.z"))
+            if error is None and bad_email:
+                error = f"{props['email']!r} is not a valid email address"
             existing = self._index(t, id_property).get(key)
             if error is None:
                 error = self._unique_conflict(t, unique_props, props, existing)

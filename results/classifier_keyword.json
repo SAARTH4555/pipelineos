@@ -1,0 +1,202 @@
+{
+  "dev": {
+    "examples": 48,
+    "accuracy": {
+      "use_case": 0.979,
+      "enterprise_signals": 1.0,
+      "team_size": 1.0,
+      "routing": 1.0
+    },
+    "per_use_case": {
+      "flaky_tests": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "support": 15
+      },
+      "slow_ci": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "support": 10
+      },
+      "test_visibility": {
+        "precision": 1.0,
+        "recall": 0.889,
+        "support": 9
+      },
+      "compliance": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "support": 6
+      },
+      "other": {
+        "precision": 0.889,
+        "recall": 1.0,
+        "support": 8
+      }
+    },
+    "sources": {
+      "keyword": 48
+    },
+    "seconds_per_answer": 0.0,
+    "misses": [
+      {
+        "id": 9,
+        "expected": "test_visibility",
+        "got": "other",
+        "expected_queue": "ae_enterprise",
+        "got_queue": "ae_enterprise"
+      }
+    ],
+    "machine": "arm64 / Python 3.12.13",
+    "provider": "keyword"
+  },
+  "holdout": {
+    "examples": 24,
+    "accuracy": {
+      "use_case": 0.417,
+      "enterprise_signals": 0.792,
+      "team_size": 0.958,
+      "routing": 0.792
+    },
+    "per_use_case": {
+      "flaky_tests": {
+        "precision": 1.0,
+        "recall": 0.286,
+        "support": 7
+      },
+      "slow_ci": {
+        "precision": 1.0,
+        "recall": 0.4,
+        "support": 5
+      },
+      "test_visibility": {
+        "precision": 1.0,
+        "recall": 0.2,
+        "support": 5
+      },
+      "compliance": {
+        "precision": 1.0,
+        "recall": 0.333,
+        "support": 3
+      },
+      "other": {
+        "precision": 0.222,
+        "recall": 1.0,
+        "support": 4
+      }
+    },
+    "sources": {
+      "keyword": 24
+    },
+    "seconds_per_answer": 0.0,
+    "misses": [
+      {
+        "id": 101,
+        "expected": "flaky_tests",
+        "got": "other",
+        "expected_queue": "sdr_mid_market",
+        "got_queue": "self_serve_nurture"
+      },
+      {
+        "id": 102,
+        "expected": "slow_ci",
+        "got": "other",
+        "expected_queue": "self_serve_nurture",
+        "got_queue": "self_serve_nurture"
+      },
+      {
+        "id": 103,
+        "expected": "flaky_tests",
+        "got": "other",
+        "expected_queue": "ae_enterprise",
+        "got_queue": "ae_enterprise"
+      },
+      {
+        "id": 104,
+        "expected": "test_visibility",
+        "got": "other",
+        "expected_queue": "self_serve_nurture",
+        "got_queue": "self_serve_nurture"
+      },
+      {
+        "id": 105,
+        "expected": "compliance",
+        "got": "other",
+        "expected_queue": "ae_enterprise",
+        "got_queue": "self_serve_nurture"
+      },
+      {
+        "id": 107,
+        "expected": "flaky_tests",
+        "got": "other",
+        "expected_queue": "self_serve_nurture",
+        "got_queue": "self_serve_nurture"
+      },
+      {
+        "id": 109,
+        "expected": "slow_ci",
+        "got": "other",
+        "expected_queue": "ae_enterprise",
+        "got_queue": "ae_enterprise"
+      },
+      {
+        "id": 110,
+        "expected": "test_visibility",
+        "got": "other",
+        "expected_queue": "self_serve_nurture",
+        "got_queue": "self_serve_nurture"
+      },
+      {
+        "id": 111,
+        "expected": "compliance",
+        "got": "other",
+        "expected_queue": "ae_enterprise",
+        "got_queue": "self_serve_nurture"
+      },
+      {
+        "id": 113,
+        "expected": "flaky_tests",
+        "got": "other",
+        "expected_queue": "self_serve_nurture",
+        "got_queue": "self_serve_nurture"
+      },
+      {
+        "id": 116,
+        "expected": "test_visibility",
+        "got": "other",
+        "expected_queue": "self_serve_nurture",
+        "got_queue": "self_serve_nurture"
+      },
+      {
+        "id": 119,
+        "expected": "flaky_tests",
+        "got": "other",
+        "expected_queue": "self_serve_nurture",
+        "got_queue": "self_serve_nurture"
+      },
+      {
+        "id": 120,
+        "expected": "slow_ci",
+        "got": "other",
+        "expected_queue": "sdr_mid_market",
+        "got_queue": "self_serve_nurture"
+      },
+      {
+        "id": 122,
+        "expected": "flaky_tests",
+        "got": "flaky_tests",
+        "expected_queue": "ae_enterprise",
+        "got_queue": "self_serve_nurture"
+      },
+      {
+        "id": 123,
+        "expected": "test_visibility",
+        "got": "other",
+        "expected_queue": "self_serve_nurture",
+        "got_queue": "self_serve_nurture"
+      }
+    ],
+    "machine": "arm64 / Python 3.12.13",
+    "provider": "keyword"
+  }
+}
