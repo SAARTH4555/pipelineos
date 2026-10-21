@@ -27,7 +27,7 @@ new portal, or tested. PipelineOS does each job as code that a reviewer can read
 |---|---|
 | `pipelineos plan` / `apply` | Diffs [`portal/pipelineos.yaml`](portal/pipelineos.yaml) against the portal, then creates or updates property groups, properties, validation rules, the `Workspace` custom object, deal pipelines and association labels. Previews by default, never deletes, prints the UI-only steps as a checklist. |
 | `generate` / `clean` | Builds a messy import with known duplicates, then normalizes, dedupes and merges it into golden records with an audit trail. |
-| `load` | Upserts golden companies (by `company_key`) and contacts (by email) in batches, then associates them. |
+| `load` | Upserts golden companies (by `company_key`) and contacts (by email) in batches, then associates them. Extra CSV columns are loaded too when the spec declares them as company properties. |
 | `usage generate` / `usage score` / `sync` | Scores product workspaces with rules in [`portal/pql.yaml`](portal/pql.yaml), each point with a plain-English reason, and syncs workspaces, company roll-ups and members to HubSpot. Records that did not change are never re-sent. |
 | `classify` / `route-demos` | Classifies demo-form answers with a local model (keyword rules as fallback) and writes segment, queue and reason onto the contact. |
 | `dictionary` | Generates [`docs/field-dictionary.md`](docs/field-dictionary.md) from the spec. |
@@ -54,6 +54,16 @@ unique property), batches over 100, a repeated key in one batch, unknown propert
 outside a picklist, invalid emails, writes that break a validation rule, and changes to fields
 HubSpot never lets you change. A bug that would fail in a real portal fails in the tests first.
 Design decisions and their reasons are in [`docs/architecture.md`](docs/architecture.md).
+
+## A second client
+
+[`portal/gtm-consultancy.yaml`](portal/gtm-consultancy.yaml) is the same tool pointed at a
+different business: a GTM-ops consultancy whose accounts come from
+[SignalScout](https://github.com/SAARTH4555/signalscout), which finds startups hiring their first
+RevOps or CRM admin role. SignalScout writes PipelineOS's load format with `signal_*` columns; this
+spec declares them, so `pipelineos load --spec portal/gtm-consultancy.yaml` writes the tier, score,
+reasons, CRM and last raise onto each company. Its field dictionary is
+[`docs/field-dictionary-gtm-consultancy.md`](docs/field-dictionary-gtm-consultancy.md).
 
 ## Quickstart
 
@@ -233,7 +243,7 @@ CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs the same gates 
 ## Layout
 
 ```
-portal/            pipelineos.yaml (the portal), pql.yaml (scoring rules)
+portal/            pipelineos.yaml (Quarry), gtm-consultancy.yaml (a second client), pql.yaml
 src/pipelineos/
   spec/            typed spec, validation, field-dictionary renderer
   portal/          live snapshot, planner, applier, plan rendering

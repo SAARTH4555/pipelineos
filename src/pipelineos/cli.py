@@ -291,7 +291,12 @@ def load_cmd(
         if mode is WriteMode.PREVIEW:
             typer.echo("Preview only. Re-run with --yes to write.")
             return
-        result = load(client, clean_dir)
+        declared = (
+            frozenset(p.name for p in portal.objects["companies"].properties)
+            if "companies" in portal.objects
+            else frozenset()
+        )
+        result = load(client, clean_dir, declared)
     except (GuardError, HubSpotError) as exc:
         typer.echo(f"error: {exc}", err=True)
         raise typer.Exit(EXIT_ERROR) from exc
