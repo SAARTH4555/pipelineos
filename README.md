@@ -67,6 +67,9 @@ reasons, CRM and last raise onto each company. Its field dictionary is
 
 ## Quickstart
 
+**New here?** [`docs/run-it-yourself.md`](docs/run-it-yourself.md) walks through it step by
+step, ending with your own HubSpot portal built by PipelineOS.
+
 Python 3.12 and [uv](https://docs.astral.sh/uv/). No HubSpot account is needed for this part:
 `--fake` runs everything against the in-memory portal.
 
