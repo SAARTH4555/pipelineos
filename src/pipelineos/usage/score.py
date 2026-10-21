@@ -40,6 +40,7 @@ class WorkspaceFacts:
     plan: str = "free"
     admin_email: str = ""
     members: set[str] = field(default_factory=set)
+    user_ids: dict[str, str] = field(default_factory=dict)  # email -> product user id
     signup_date: date | None = None
     last_active_date: date | None = None
     active_users_14d: int = 0
@@ -63,6 +64,7 @@ def aggregate(events: list[Event], as_of: date, window_days: int = 14) -> dict[s
             continue  # events after the scoring date do not exist yet
         f = facts.setdefault(e.workspace_id, WorkspaceFacts(e.workspace_id))
         f.members.add(e.email)
+        f.user_ids.setdefault(e.email, e.user_id)
         if e.type == "signup":
             f.name, f.admin_email, f.signup_date = e.value, e.email, e.at
         elif e.type == "plan_changed" and e.at >= plan_at.get(e.workspace_id, date.min):

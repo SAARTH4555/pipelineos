@@ -1,0 +1,31 @@
+{
+  "associations": {
+    "created": 1156,
+    "skipped_missing_record": 0,
+    "to_send": 1156
+  },
+  "companies": {
+    "created": 211,
+    "failed": 0,
+    "skipped_unchanged": 0,
+    "to_send": 211,
+    "updated": 0
+  },
+  "contacts": {
+    "created": 945,
+    "failed": 0,
+    "skipped_unchanged": 0,
+    "to_send": 945,
+    "updated": 0
+  },
+  "dry_run": false,
+  "pql_companies": 83,
+  "pql_workspaces": 83,
+  "workspaces": {
+    "created": 240,
+    "failed": 0,
+    "skipped_unchanged": 0,
+    "to_send": 240,
+    "updated": 0
+  }
+}

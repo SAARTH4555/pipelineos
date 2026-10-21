@@ -29,6 +29,8 @@ from pipelineos.spec import PortalSpec, SpecError, load_spec
 from pipelineos.spec.docs import render_field_dictionary
 from pipelineos.usage.events import DEFAULT_AS_OF, generate_events, read_events, write_events
 from pipelineos.usage.score import aggregate, load_pql_config, score
+from pipelineos.usage.state import SyncState, load_state, save_state
+from pipelineos.usage.sync import SyncReport, sync
 
 DEFAULT_SPEC = Path("portal/pipelineos.yaml")
 DEFAULT_DICTIONARY = Path("docs/field-dictionary.md")
@@ -396,3 +398,75 @@ def company_sizes(path: Path) -> dict[str, int]:
         for row in read_csv_rows(path)
         if row.get("numberofemployees", "").isdigit()
     }
+
+
+def _render_sync(report: SyncReport) -> str:
+    lines = []
+    verb = "would send" if report.dry_run else "sent"
+    for name, part in (
+        ("companies", report.companies),
+        ("contacts", report.contacts),
+        ("workspaces", report.workspaces),
+    ):
+        line = f"  {name:<11} {verb} {part.to_send:>5}, unchanged {part.skipped_unchanged:>5}"
+        if not report.dry_run:
+            line += f"  ({part.created} created, {part.updated} updated, {len(part.errors)} failed)"
+        lines.append(line)
+        lines += [f"      ! {e.key}: {e.message}" for e in part.errors[:5]]
+    lines.append(f"  associations {verb} {report.associations_to_send}")
+    lines.append(
+        f"  {report.pql_workspaces} product-qualified workspaces across "
+        f"{report.pql_companies} companies"
+    )
+    return "\n".join(lines)
+
+
+@app.command(name="sync")
+def sync_cmd(
+    events_path: Annotated[Path, typer.Argument(help="events.csv")] = Path("data/usage/events.csv"),
+    clean_dir: Annotated[Path, typer.Option(help="Cleaned CRM data, for company size.")] = (
+        Path("data/clean")
+    ),
+    pql: PqlOption = DEFAULT_PQL,
+    as_of: AsOfOption = DEFAULT_AS_OF_TEXT,
+    state_path: Annotated[Path, typer.Option("--state", help="Sync state file.")] = Path(
+        "data/usage/sync_state.json"
+    ),
+    spec: SpecOption = DEFAULT_SPEC,
+    fake: FakeOption = False,
+    yes: YesOption = False,
+    report: Annotated[Path | None, typer.Option(help="Write the sync report JSON here.")] = None,
+) -> None:
+    """Score workspaces and sync them, their companies and members to HubSpot."""
+    portal = _load(spec)
+    config = load_pql_config(pql)
+    day = date.fromisoformat(as_of)
+    facts = aggregate(read_events(events_path), day, config.window_days)
+    employees = company_sizes(clean_dir / "companies.csv")
+    results = {
+        w: score(f, config, day, employees.get(f.company_key or "")) for w, f in facts.items()
+    }
+    client, allowed = _client(fake, configure=portal)
+    # A fake portal starts empty every run, so its state must too.
+    state = SyncState() if fake else load_state(state_path)
+    try:
+        mode = authorize_writes(client, yes=yes, allowed_portal=allowed)
+        dry_run = mode is WriteMode.PREVIEW
+        result = sync(client, facts, results, state, day, dry_run=dry_run)
+        typer.echo(f"Sync of {len(facts)} workspaces as of {as_of}:")
+        typer.echo(_render_sync(result))
+        if dry_run:
+            typer.echo("Preview only. Re-run with --yes to write.")
+            return
+        if not fake:
+            save_state(state, state_path)
+        if report is not None:
+            write_summary(result.summary(), report)
+        if fake:
+            again = sync(client, facts, results, state, day, dry_run=False)
+            typer.echo(f"\nRe-sync with no new usage: {again.writes} records sent.")
+    except (GuardError, HubSpotError) as exc:
+        typer.echo(f"error: {exc}", err=True)
+        raise typer.Exit(EXIT_ERROR) from exc
+    if result.companies.errors or result.contacts.errors or result.workspaces.errors:
+        raise typer.Exit(EXIT_ERROR)
