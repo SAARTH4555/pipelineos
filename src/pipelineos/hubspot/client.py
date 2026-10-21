@@ -115,6 +115,15 @@ class HubSpotClient(Protocol):
     def list_association_labels(self, from_type: str, to_type: str) -> list[JSON]: ...
     def create_association_label(self, from_type: str, to_type: str, label: JSON) -> JSON: ...
 
+    # property validation rules (enforced on API writes since the 2026-09 release)
+    def list_validation_rules(self, object_type_id: str) -> list[JSON]:
+        """Flat rows: ``{propertyName, ruleType, ruleArguments, shouldApplyNormalization}``."""
+        ...
+
+    def put_validation_rule(
+        self, object_type_id: str, property_name: str, rule_type: str, body: JSON
+    ) -> None: ...
+
     # records
     def batch_upsert(
         self, object_type: str, id_property: str, inputs: Sequence[UpsertInput]

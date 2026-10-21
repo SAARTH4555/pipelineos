@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import copy
 import itertools
+import re
 from collections.abc import Sequence
 
 from pipelineos.hubspot.client import (
@@ -119,6 +120,7 @@ class FakeHubSpot:
         self._pipelines: dict[str, dict[str, JSON]] = {"deals": {}}
         self._labels: dict[tuple[str, str], list[JSON]] = {}
         self._unique: dict[tuple[str, str], dict[str, str]] = {}
+        self._rules: dict[str, dict[str, dict[str, JSON]]] = {}
         self._seed_default_pipeline()
         self._add_default_association("contacts", "companies", 279)
         self._add_default_association("deals", "companies", 341)
@@ -423,6 +425,29 @@ class FakeHubSpot:
         next(self._ids)  # keep the inverse id from being reused
         return {"results": [copy.deepcopy(fwd), copy.deepcopy(inv)]}
 
+    # -- property validation rules -----------------------------------------------------------
+
+    def list_validation_rules(self, object_type_id: str) -> list[JSON]:
+        self._call("list_rules", object_type_id)
+        rules = self._rules.get(self._type(object_type_id), {})
+        return [
+            {"propertyName": prop, "ruleType": rule_type, **copy.deepcopy(body)}
+            for prop, by_type in sorted(rules.items())
+            for rule_type, body in sorted(by_type.items())
+        ]
+
+    def put_validation_rule(
+        self, object_type_id: str, property_name: str, rule_type: str, body: JSON
+    ) -> None:
+        self._call("put_rule", object_type_id)
+        t = self._type(object_type_id)
+        if property_name not in self._props[t]:
+            raise HubSpotError(404, "OBJECT_NOT_FOUND", f"property {property_name} not found")
+        self._rules.setdefault(t, {}).setdefault(property_name, {})[rule_type] = {
+            "ruleArguments": [str(a) for a in body.get("ruleArguments", [])],
+            "shouldApplyNormalization": bool(body.get("shouldApplyNormalization", False)),
+        }
+
     # -- records -----------------------------------------------------------------------------
 
     def _upsertable(self, t: str, id_property: str) -> bool:
@@ -489,6 +514,9 @@ class FakeHubSpot:
                     return f"{value!r} is not a number for {name!r}"
             elif prop["type"] == "bool" and value not in ("true", "false"):
                 return f"{value!r} is not a boolean for {name!r}"
+            for rule_type, rule in self._rules.get(t, {}).get(name, {}).items():
+                if not _passes_rule(rule_type, rule["ruleArguments"], value):
+                    return f"{value!r} fails the {rule_type} validation rule on {name!r}"
         return None
 
     def _unique_conflict(
@@ -520,6 +548,27 @@ class FakeHubSpot:
                 raise HubSpotError(404, "OBJECT_NOT_FOUND", f"record missing in {pair}")
             self.associations.add((a, pair.from_id, b, pair.to_id, type_id))
         return len(pairs)
+
+
+_DOMAIN_RE = re.compile(r"^(?!-)[a-z0-9-]+(\.[a-z0-9-]+)+$", re.IGNORECASE)
+_EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+
+
+def _passes_rule(rule_type: str, args: list[str], value: str) -> bool:
+    """The subset of HubSpot validation rules this project uses; unknown types pass."""
+    checks = {
+        "REGEX": lambda: re.search(args[0], value) is not None,
+        "MIN_NUMBER": lambda: float(value) >= float(args[0]),
+        "MAX_NUMBER": lambda: float(value) <= float(args[0]),
+        "MIN_LENGTH": lambda: len(value) >= int(args[0]),
+        "MAX_LENGTH": lambda: len(value) <= int(args[0]),
+        "DOMAIN": lambda: _DOMAIN_RE.match(value) is not None,
+        "EMAIL": lambda: _EMAIL_RE.match(value) is not None,
+        "FORMAT": lambda: value == (value.lower() if args[0] == "LOWER" else value.upper()),
+        "WHITESPACE": lambda: value == value.strip(),
+    }
+    check = checks.get(rule_type)
+    return True if check is None else bool(check())
 
 
 def _group(name: str, label: str, display_order: int | None = None) -> JSON:

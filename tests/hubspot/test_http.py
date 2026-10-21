@@ -254,3 +254,42 @@ def test_from_settings_requires_token() -> None:
         HttpHubSpot.from_settings(Settings(hubspot_token=None))
     client = HttpHubSpot.from_settings(Settings(hubspot_token=SecretStr("t")))
     assert isinstance(client, HttpHubSpot)
+
+
+def test_validation_rule_endpoints_and_flattening() -> None:
+    seen: list[tuple[str, str, bytes]] = []
+
+    def handler(req: httpx.Request) -> httpx.Response:
+        seen.append((req.method, req.url.path, req.content))
+        if req.method == "GET":
+            return httpx.Response(
+                200,
+                json={
+                    "results": [
+                        {
+                            "propertyName": "pql_score",
+                            "propertyValidationRules": [
+                                {"ruleType": "MIN_NUMBER", "ruleArguments": ["0"]},
+                                {"ruleType": "MAX_NUMBER", "ruleArguments": ["100"]},
+                            ],
+                        },
+                        {"propertyName": "company_key", "ruleType": "DOMAIN", "ruleArguments": []},
+                    ]
+                },
+            )
+        return httpx.Response(204)
+
+    client, _ = make(handler)
+    rows = client.list_validation_rules("0-2")
+    assert [(r["propertyName"], r["ruleType"]) for r in rows] == [
+        ("pql_score", "MIN_NUMBER"),
+        ("pql_score", "MAX_NUMBER"),
+        ("company_key", "DOMAIN"),
+    ]
+    client.put_validation_rule("0-2", "pql_score", "MAX_NUMBER", {"ruleArguments": ["100"]})
+    assert seen[0][:2] == ("GET", "/crm/property-validations/2026-09/0-2")
+    assert seen[1][:2] == (
+        "PUT",
+        "/crm/property-validations/2026-09/0-2/pql_score/rule-type/MAX_NUMBER",
+    )
+    assert json.loads(seen[1][2]) == {"ruleArguments": ["100"]}
