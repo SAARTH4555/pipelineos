@@ -7,6 +7,9 @@ requires-python = ">=3.12"
 license = { text = "MIT" }
 authors = [{ name = "Archit Jain" }]
 dependencies = [
+    "httpx>=0.28,<1",
+    "pydantic>=2.9,<3",
+    "pydantic-settings>=2.6,<3",
     "typer>=0.16,<1",
 ]
 
