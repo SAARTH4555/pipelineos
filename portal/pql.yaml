@@ -1,0 +1,47 @@
+# PQL scoring for Quarry. Points add up to 100; a workspace is product-qualified at `threshold`.
+#
+# Every rule is one plain sentence a rep can read in the `pql_reasons` field, so nobody has to
+# trust a black box. Signals favour team adoption over one heavy user, because a team is what
+# buys Enterprise. A workspace with no activity inside `active_within_days` scores 0, whatever
+# it did before.
+
+threshold: 60
+window_days: 14
+active_within_days: 14
+
+rules:
+  - id: team_adoption
+    reason: 3 or more people active in the last 14 days
+    metric: active_users_14d
+    gte: 3
+    points: 25
+  - id: ci_connected
+    reason: Connected at least one CI pipeline
+    metric: ci_pipelines_connected
+    gte: 1
+    points: 20
+  - id: heavy_usage
+    reason: 40 or more key actions in the last 14 days
+    metric: key_actions_14d
+    gte: 40
+    points: 15
+  - id: invited_team
+    reason: 8 or more seats invited
+    metric: seats
+    gte: 8
+    points: 10
+  - id: api_integration
+    reason: Created an API key
+    metric: api_keys_created
+    gte: 1
+    points: 10
+  - id: active_this_week
+    reason: Active in the last 3 days
+    metric: days_since_active
+    lte: 3
+    points: 10
+  - id: company_fit
+    reason: Company has 50 or more employees
+    metric: company_employees
+    gte: 50
+    points: 10

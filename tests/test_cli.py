@@ -209,3 +209,49 @@ def test_load_refuses_wrong_portal(tmp_path: Path, monkeypatch: pytest.MonkeyPat
     result = runner.invoke(app, ["load", str(clean_dir), "--yes", "--spec", str(SPEC)])
     assert result.exit_code == 1 and "refusing to write" in result.output
     get_settings.cache_clear()
+
+
+def test_usage_generate_and_score(tmp_path: Path) -> None:
+    raw, clean_dir, usage = tmp_path / "raw", tmp_path / "clean", tmp_path / "usage"
+    runner.invoke(app, ["generate", "--n", "400", "--out", str(raw)])
+    runner.invoke(app, ["clean", str(raw), "--out", str(clean_dir)])
+    made = runner.invoke(app, ["usage", "generate", str(clean_dir), "--out", str(usage)])
+    assert made.exit_code == 0, made.output
+    assert (usage / "events.csv").exists() and (usage / "truth_archetypes.csv").exists()
+
+    report = tmp_path / "pql.json"
+    scored = runner.invoke(
+        app,
+        [
+            "usage",
+            "score",
+            str(usage / "events.csv"),
+            "--clean-dir",
+            str(clean_dir),
+            "--pql",
+            str(ROOT / "portal" / "pql.yaml"),
+            "--top",
+            "3",
+            "--report",
+            str(report),
+        ],
+    )
+    assert scored.exit_code == 0, scored.output
+    assert "workspaces are product-qualified" in scored.stdout
+    assert "PQL rate by workspace type" in scored.stdout
+    assert '"by_archetype"' in report.read_text()
+
+    (usage / "truth_archetypes.csv").unlink()
+    no_truth = runner.invoke(
+        app,
+        [
+            "usage",
+            "score",
+            str(usage / "events.csv"),
+            "--clean-dir",
+            str(tmp_path / "missing"),
+            "--pql",
+            str(ROOT / "portal" / "pql.yaml"),
+        ],
+    )
+    assert no_truth.exit_code == 0 and "PQL rate by" not in no_truth.stdout

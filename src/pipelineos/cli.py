@@ -6,6 +6,9 @@ Typer keeps each command a plain typed function, so commands stay testable throu
 
 from __future__ import annotations
 
+import csv
+from collections import defaultdict
+from datetime import date
 from pathlib import Path
 from typing import Annotated
 
@@ -24,6 +27,8 @@ from pipelineos.portal.render import render_apply, render_checklist, render_plan
 from pipelineos.settings import get_settings
 from pipelineos.spec import PortalSpec, SpecError, load_spec
 from pipelineos.spec.docs import render_field_dictionary
+from pipelineos.usage.events import DEFAULT_AS_OF, generate_events, read_events, write_events
+from pipelineos.usage.score import aggregate, load_pql_config, score
 
 DEFAULT_SPEC = Path("portal/pipelineos.yaml")
 DEFAULT_DICTIONARY = Path("docs/field-dictionary.md")
@@ -281,3 +286,113 @@ def load_cmd(
     )
     if result.companies.errors or result.contacts.errors:
         raise typer.Exit(EXIT_ERROR)
+
+
+usage_app = typer.Typer(
+    help="Product usage: generate events and score workspaces.", no_args_is_help=True
+)
+app.add_typer(usage_app, name="usage")
+
+PqlOption = Annotated[Path, typer.Option("--pql", help="PQL scoring rules YAML.")]
+AsOfOption = Annotated[str, typer.Option("--as-of", help="Scoring date (YYYY-MM-DD).")]
+DEFAULT_PQL = Path("portal/pql.yaml")
+DEFAULT_AS_OF_TEXT = DEFAULT_AS_OF.isoformat()
+
+
+@usage_app.command(name="generate")
+def usage_generate(
+    clean_dir: Annotated[Path, typer.Argument(help="Output of `pipelineos clean`.")] = (
+        Path("data/clean")
+    ),
+    out: Annotated[Path, typer.Option(help="Output directory.")] = Path("data/usage"),
+    seed: Annotated[int, typer.Option(help="Random seed.")] = 7,
+    as_of: AsOfOption = DEFAULT_AS_OF_TEXT,
+) -> None:
+    """Generate product events for workspaces built on the cleaned CRM data."""
+    contacts = read_csv_rows(clean_dir / "contacts.csv")
+    companies = read_csv_rows(clean_dir / "companies.csv")
+    events, archetypes = generate_events(
+        contacts, companies, seed=seed, as_of=date.fromisoformat(as_of)
+    )
+    write_events(events, out / "events.csv")
+    with (out / "truth_archetypes.csv").open("w", newline="") as handle:
+        writer = csv.writer(handle, lineterminator="\n")
+        writer.writerow(("workspace_id", "archetype"))
+        writer.writerows(sorted(archetypes.items()))
+    typer.echo(f"wrote {len(events)} events for {len(archetypes)} workspaces to {out}")
+
+
+@usage_app.command(name="score")
+def usage_score(
+    events_path: Annotated[Path, typer.Argument(help="events.csv")] = Path("data/usage/events.csv"),
+    clean_dir: Annotated[Path, typer.Option(help="Cleaned CRM data, for company size.")] = (
+        Path("data/clean")
+    ),
+    pql: PqlOption = DEFAULT_PQL,
+    as_of: AsOfOption = DEFAULT_AS_OF_TEXT,
+    top: Annotated[int, typer.Option(help="How many top workspaces to list.")] = 10,
+    report: Annotated[Path | None, typer.Option(help="Write a JSON summary here.")] = None,
+) -> None:
+    """Score every workspace and list the top product-qualified ones with their reasons."""
+    config = load_pql_config(pql)
+    day = date.fromisoformat(as_of)
+    facts = aggregate(read_events(events_path), day, config.window_days)
+    employees = company_sizes(clean_dir / "companies.csv")
+    results = {
+        w: score(f, config, day, employees.get(f.company_key or "")) for w, f in facts.items()
+    }
+    ranked = sorted(results, key=lambda w: (-results[w].score, w))
+    pqls = [w for w in ranked if results[w].is_pql]
+    typer.echo(
+        f"{len(pqls)} of {len(results)} workspaces are product-qualified "
+        f"(threshold {config.threshold})\n"
+    )
+    for w in ranked[:top]:
+        r = results[w]
+        typer.echo(f"  {r.score:>3}  {facts[w].name}  [{facts[w].plan}, {facts[w].seats} seats]")
+        typer.echo(f"       {r.reasons_text}")
+    summary: dict[str, object] = {
+        "workspaces": len(results),
+        "pql": len(pqls),
+        "threshold": config.threshold,
+        "as_of": as_of,
+    }
+    truth = events_path.parent / "truth_archetypes.csv"
+    if truth.exists():
+        by_type: dict[str, list[int]] = defaultdict(list)
+        for truth_row in read_csv_rows(truth):
+            found = results.get(truth_row["workspace_id"])
+            if found is not None:
+                by_type[truth_row["archetype"]].append(found.score)
+        breakdown = {
+            name: {
+                "workspaces": len(scores),
+                "pql_rate": round(sum(s >= config.threshold for s in scores) / len(scores), 3),
+                "mean_score": round(sum(scores) / len(scores), 1),
+            }
+            for name, scores in sorted(by_type.items())
+        }
+        summary["by_archetype"] = breakdown
+        typer.echo("\nPQL rate by workspace type (generator ground truth):")
+        for name, stats in breakdown.items():
+            typer.echo(
+                f"  {name:<16} {stats['pql_rate']:>5.0%} of {stats['workspaces']:>3}, "
+                f"mean score {stats['mean_score']}"
+            )
+    if report is not None:
+        write_summary(summary, report)
+
+
+def read_csv_rows(path: Path) -> list[dict[str, str]]:
+    with path.open(newline="") as handle:
+        return list(csv.DictReader(handle))
+
+
+def company_sizes(path: Path) -> dict[str, int]:
+    if not path.exists():
+        return {}
+    return {
+        row["company_key"]: int(row["numberofemployees"])
+        for row in read_csv_rows(path)
+        if row.get("numberofemployees", "").isdigit()
+    }
